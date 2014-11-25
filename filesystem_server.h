@@ -8,13 +8,13 @@
 
 struct message_handler_t;
 
-struct tcp_server_t : QObject
+struct filesystem_server_t : QObject
 {
    Q_OBJECT
 
 public:
-   tcp_server_t(message_handler_t * message_handler, boost::filesystem::path const & path);
-   ~tcp_server_t();
+   filesystem_server_t(message_handler_t * message_handler, boost::filesystem::path const & path);
+   ~filesystem_server_t();
 
 private slots:
    void accept_connection();

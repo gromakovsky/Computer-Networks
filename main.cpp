@@ -1,5 +1,5 @@
 #include "announcer.h"
-#include "tcp_server.h"
+#include "filesystem_server.h"
 #include "client.h"
 #include "message_handler.h"
 
@@ -51,7 +51,7 @@ int main(int argc, char * argv[])
    announcer_t announcer(my_ip(), my_name, path, &msg_handler);
    announcer.start();
 
-   tcp_server_t server(&msg_handler, path);
+   filesystem_server_t server(&msg_handler, path);
 
    client_t client(&msg_handler);
    msg_handler.set_client(&client);

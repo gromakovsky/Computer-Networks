@@ -1,5 +1,5 @@
 #include "common.h"
-#include "tcp_server.h"
+#include "filesystem_server.h"
 #include "message_handler.h"
 #include "query.h"
 
@@ -11,7 +11,7 @@
 
 namespace fs = boost::filesystem;
 
-struct tcp_server_t::implementation_t
+struct filesystem_server_t::implementation_t
 {
    QTcpServer server;
    QTcpSocket socket;
@@ -31,17 +31,17 @@ struct tcp_server_t::implementation_t
    }
 };
 
-tcp_server_t::tcp_server_t(message_handler_t * message_handler, boost::filesystem::path const & path)
+filesystem_server_t::filesystem_server_t(message_handler_t * message_handler, boost::filesystem::path const & path)
    : pimpl_(new implementation_t(message_handler, path))
 {
    connect(&pimpl_->server, SIGNAL(newConnection()), SLOT(accept_connection()));
 }
 
-tcp_server_t::~tcp_server_t()
+filesystem_server_t::~filesystem_server_t()
 {
 }
 
-void tcp_server_t::accept_connection()
+void filesystem_server_t::accept_connection()
 {
    assert(pimpl_->server.hasPendingConnections());
    new query_t(this, pimpl_->server.nextPendingConnection(), pimpl_->message_handler, pimpl_->path);

@@ -12,7 +12,7 @@ LIBS += -lboost_system
 SOURCES += main.cpp \
     announcer.cpp \
     message_handler.cpp \
-    tcp_server.cpp \
+    filesystem_server.cpp \
     query.cpp \
     client.cpp \
     md5.cpp
@@ -24,7 +24,7 @@ HEADERS += \
     announcer.h \
     message_handler.h \
     host.h \
-    tcp_server.h \
+    filesystem_server.h \
     common.h \
     query.h \
     client.h \
