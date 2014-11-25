@@ -97,7 +97,8 @@ struct announcer_t::implementation_t
          socket.readDatagram(datagram.data(), datagram.size());
          if (datagram.size() <= 16)
          {
-            BOOST_THROW_EXCEPTION(std::runtime_error("Received datagram with size " + std::to_string(datagram.size())));
+            BOOST_THROW_EXCEPTION(std::runtime_error("Received truncated datagram with size "
+                                                     + std::to_string(datagram.size())));
          }
 
          std::string const ip = parse_ip(datagram.data());
