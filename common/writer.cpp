@@ -8,14 +8,17 @@ struct writer_t::implementation_t
    QTcpSocket * socket;
    QByteArray data;
 
+   bool all_data_consumed;
+
    implementation_t(QTcpSocket * socket)
       : socket(socket)
+      , all_data_consumed(false)
    {
    }
 
-   void start(QByteArray const & to_write)
+   void consume(QByteArray const & to_write)
    {
-      data = to_write;
+      data.append(to_write);
       write_chunk();
    }
 
@@ -42,16 +45,24 @@ writer_t::~writer_t()
 {
 }
 
-void writer_t::start(QByteArray const & data)
+void writer_t::consume(QByteArray const & data)
 {
-   pimpl_->start(data);
+   pimpl_->consume(data);
+}
+
+void writer_t::finish()
+{
+   pimpl_->all_data_consumed = true;
 }
 
 void writer_t::write()
 {
    if (pimpl_->data.size() == 0)
    {
-      emit finished();
+      if (pimpl_->all_data_consumed)
+      {
+         emit finished();
+      }
    }
    else
    {

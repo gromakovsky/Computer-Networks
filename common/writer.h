@@ -15,7 +15,8 @@ public:
    writer_t(QTcpSocket * socket);
    ~writer_t();
 
-   void start(QByteArray const & data);
+   void consume(QByteArray const & data);
+   void finish();
 
 signals:
    void finished();
