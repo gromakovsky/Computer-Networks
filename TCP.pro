@@ -20,7 +20,8 @@ SOURCES += main.cpp \
     query.cpp \
     client.cpp \
     common/md5.cpp \
-    common/writer.cpp
+    common/writer.cpp \
+    common/reader.cpp
 
 include(deployment.pri)
 qtcAddDeployment()
@@ -34,5 +35,6 @@ HEADERS += \
     query.h \
     client.h \
     common/md5.h \
-    common/writer.h
+    common/writer.h \
+    common/reader.h
 
