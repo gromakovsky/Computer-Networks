@@ -18,6 +18,7 @@ SOURCES += main.cpp \
     common/message_handler.cpp \
     server/filesystem_server.cpp \
     server/query.cpp \
+    server/message_constructor.cpp \
     client.cpp \
     common/md5.cpp \
     common/writer.cpp \
@@ -29,10 +30,11 @@ qtcAddDeployment()
 HEADERS += \
     announcer.h \
     common/message_handler.h \
+    common/common.h \
     host.h \
     server/filesystem_server.h \
-    common/common.h \
     server/query.h \
+    server/message_constructor.h \
     client.h \
     common/md5.h \
     common/writer.h \
