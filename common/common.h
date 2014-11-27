@@ -15,7 +15,7 @@ inline unsigned default_port()
    return 7777;
 }
 
-enum message_type
+enum message_type_t
 {
    MT_LIST = 0x1,
    MT_GET = 0x2,
