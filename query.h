@@ -24,7 +24,6 @@ public:
 private slots:
    void read_from_socket();
    void display_error(QAbstractSocket::SocketError err);
-   void write_response(qint64 n);
 
 private:
    struct implementation_t;

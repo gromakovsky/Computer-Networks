@@ -1,6 +1,7 @@
-#include "common.h"
+#include "common/common.h"
 #include "query.h"
 #include "message_handler.h"
+#include "common/writer.h"
 
 #include <QTcpSocket>
 #include <QByteArray>
@@ -69,59 +70,134 @@ struct query_t::implementation_t
    message_handler_t * message_handler;
    fs::path const path;
 
-   boost::optional<message_type> msg_type;
-   boost::variant<boost::none_t, std::string, std::pair<std::string, std::string>> msg_args;
-   boost::optional<error_type> err;
-
-   QByteArray response;
+   QByteArray buffer;
+   writer_t writer;
 
    implementation_t(QTcpSocket * socket, message_handler_t * message_handler, fs::path const & path)
       : socket(socket)
       , message_handler(message_handler)
       , path(path)
+      , writer(socket)
    {
+      assert(socket->state() == QAbstractSocket::ConnectedState);
    }
 
-   void construct_response()
+   void display_error(QAbstractSocket::SocketError err)
    {
-      if (!err && !msg_type)
-         err = ET_INTERNAL_ERROR;
-
-      if (err)
+      switch (err)
       {
-         response = compose_error_response(*err);
-         return;
+         case QAbstractSocket::RemoteHostClosedError:
+            break;
+         case QAbstractSocket::HostNotFoundError:
+            message_handler->handle_error("The host was not found. Please check the host name and port settings.");
+            break;
+         case QAbstractSocket::ConnectionRefusedError:
+            message_handler->handle_error("The connection was refused by the peer.");
+            break;
+         default:
+            message_handler->handle_error("The following error occurred: " + socket->errorString());
       }
+   }
 
-      switch (*msg_type)
+   void read()
+   {
+      static const size_t try_read_size = 1 << 10;
+      static char buf[try_read_size];
+      auto res = socket->read(buf, try_read_size);
+      switch (res)
+      {
+         case -1:
+         {
+            display_error(socket->error());
+            return;
+         }
+         case 0:
+         {
+            reading_finished();
+            return;
+         }
+         default:
+         {
+            buffer.append(buf, res);
+            return;
+         }
+      }
+   }
+
+   void reading_finished()
+   {
+      auto message_type = static_cast<message_type_t>(buffer.at(0));
+      switch (message_type)
       {
          case MT_LIST:
          {
-            response = compose_list_response(path);
+            qDebug() << "Received LIST";
+            writer.consume(compose_list_response(path));
             break;
          }
          case MT_GET:
          {
-            response = compose_get_response(path / boost::get<std::string>(msg_args));
+            qDebug() << "Received GET";
+            std::string filename = std::string(std::next(buffer.begin()), buffer.end());
+            writer.consume(compose_get_response(filename));
             break;
          }
          case MT_PUT:
          {
-            auto args = boost::get<std::pair<std::string, std::string>>(msg_args);
-            fs::ofstream out(path / args.first, std::ios_base::binary);
-            boost::copy(args.second, std::ostream_iterator<char>(out));
-            response.clear();
+            qDebug() << "Received PUT";
+//            QByteArray raw = pimpl_->socket->readAll();
+//            std::string filename(raw.data());
+//            auto start = raw.data() + filename.size() + 1;
+//            auto size = bytes_to_int(QByteArray(start, 8));
+//            std::string data = std::string(start + 8, size);
+//            pimpl_->msg_args = std::make_pair(filename, data);
             break;
          }
-         case MT_ERROR:
-         {
-            // TODO
-         }
          default:
-         {
-         }
+            assert(false);
       }
    }
+
+//   void construct_response()
+//   {
+//      if (!err && !msg_type)
+//         err = ET_INTERNAL_ERROR;
+
+//      if (err)
+//      {
+//         response = compose_error_response(*err);
+//         return;
+//      }
+
+//      switch (*msg_type)
+//      {
+//         case MT_LIST:
+//         {
+//            response = compose_list_response(path);
+//            break;
+//         }
+//         case MT_GET:
+//         {
+//            response = compose_get_response(path / boost::get<std::string>(msg_args));
+//            break;
+//         }
+//         case MT_PUT:
+//         {
+//            auto args = boost::get<std::pair<std::string, std::string>>(msg_args);
+//            fs::ofstream out(path / args.first, std::ios_base::binary);
+//            boost::copy(args.second, std::ostream_iterator<char>(out));
+//            response.clear();
+//            break;
+//         }
+//         case MT_ERROR:
+//         {
+//            // TODO
+//         }
+//         default:
+//         {
+//         }
+//      }
+//   }
 };
 
 query_t::query_t(QObject * parent, QTcpSocket * socket, message_handler_t * message_handler, fs::path const & path)
@@ -131,103 +207,20 @@ query_t::query_t(QObject * parent, QTcpSocket * socket, message_handler_t * mess
    connect(pimpl_->socket, SIGNAL(readyRead()), SLOT(read_from_socket()));
    connect(pimpl_->socket, SIGNAL(error(QAbstractSocket::SocketError)),
            SLOT(display_error(QAbstractSocket::SocketError)));
+
+   connect(&pimpl_->writer, SIGNAL(finished()), SLOT(deleteLater()));
 }
 
 query_t::~query_t()
 {
 }
 
-void query_t::reading_finished()
-{
-   pimpl_->construct_response();
-   connect(pimpl_->socket, SIGNAL(bytesWritten(qint64)), SLOT(write_response(qint64)));
-   if (pimpl_->response.size() != 0)
-   {
-      pimpl_->socket->write(pimpl_->response);
-   }
-}
-
-void query_t::writing_finished()
-{
-   pimpl_->socket->deleteLater();
-   deleteLater();
-}
-
 void query_t::read_from_socket()
 {
-   if (!pimpl_->msg_type)
-   {
-      char c;
-      bool success = pimpl_->socket->getChar(&c);
-      if (!success)
-      {
-         pimpl_->err = ET_INTERNAL_ERROR;
-         pimpl_->message_handler->handle_error("Could not get message type");
-         reading_finished();
-         return;
-      }
-
-      pimpl_->msg_type = static_cast<message_type>(c);
-   }
-
-   switch (*pimpl_->msg_type)
-   {
-      case MT_LIST:
-      {
-         qDebug() << "Received LIST";
-         pimpl_->msg_args = boost::none;
-         break;
-      }
-      case MT_GET:
-      {
-         qDebug() << "Received GET";
-         QByteArray filename = pimpl_->socket->readAll();
-         pimpl_->msg_args = std::string(filename.begin(), filename.end());
-         break;
-      }
-      case MT_PUT:
-      {
-         qDebug() << "Received PUT";
-         QByteArray raw = pimpl_->socket->readAll();
-         std::string filename(raw.data());
-         auto start = raw.data() + filename.size() + 1;
-         auto size = bytes_to_int(QByteArray(start, 8));
-         std::string data = std::string(start + 8, size);
-         pimpl_->msg_args = std::make_pair(filename, data);
-         break;
-      }
-      default:
-         assert(0);
-   }
-
-   reading_finished();
+   pimpl_->read();
 }
 
 void query_t::display_error(QAbstractSocket::SocketError err)
 {
-   switch (err)
-   {
-      case QAbstractSocket::RemoteHostClosedError:
-         break;
-      case QAbstractSocket::HostNotFoundError:
-         pimpl_->message_handler->handle_error("The host was not found. Please check the host name and port settings.");
-         break;
-      case QAbstractSocket::ConnectionRefusedError:
-         pimpl_->message_handler->handle_error("The connection was refused by the peer.");
-         break;
-      default:
-         pimpl_->message_handler->handle_error("The following error occurred: " + pimpl_->socket->errorString());
-   }
-}
-
-void query_t::write_response(qint64 n)
-{
-   if (pimpl_->response.remove(0, n).size() != 0)
-   {
-      pimpl_->socket->write(pimpl_->response);
-   }
-   else
-   {
-      writing_finished();
-   }
+   pimpl_->display_error(err);
 }
