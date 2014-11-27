@@ -1,6 +1,7 @@
 #include "common/common.h"
 #include "query.h"
-#include "message_handler.h"
+#include "common/message_handler.h"
+#include "common/reader.h"
 #include "common/writer.h"
 
 #include <QTcpSocket>
@@ -8,7 +9,6 @@
 
 #include <boost/range/algorithm/copy.hpp>
 #include <boost/optional.hpp>
-#include <boost/variant.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 
@@ -71,12 +71,14 @@ struct query_t::implementation_t
    fs::path const path;
 
    QByteArray buffer;
+   reader_t reader;
    writer_t writer;
 
    implementation_t(QTcpSocket * socket, message_handler_t * message_handler, fs::path const & path)
       : socket(socket)
       , message_handler(message_handler)
       , path(path)
+      , reader(socket)
       , writer(socket)
    {
       assert(socket->state() == QAbstractSocket::ConnectedState);

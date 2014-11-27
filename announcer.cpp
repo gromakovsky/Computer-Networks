@@ -1,7 +1,7 @@
 #include "common/common.h"
 #include "announcer.h"
 #include "host.h"
-#include "message_handler.h"
+#include "common/message_handler.h"
 
 #include <cstdint>
 #include <iostream>

@@ -1,6 +1,6 @@
 #include "client.h"
 #include "common/common.h"
-#include "message_handler.h"
+#include "common/message_handler.h"
 
 #include <string>
 #include <stdexcept>

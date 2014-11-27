@@ -1,7 +1,7 @@
 #include "announcer.h"
-#include "filesystem_server.h"
+#include "server/filesystem_server.h"
 #include "client.h"
-#include "message_handler.h"
+#include "common/message_handler.h"
 
 #include <iostream>
 

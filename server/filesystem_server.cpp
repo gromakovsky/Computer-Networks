@@ -1,6 +1,6 @@
 #include "common/common.h"
 #include "filesystem_server.h"
-#include "message_handler.h"
+#include "common/message_handler.h"
 #include "query.h"
 
 #include <cassert>

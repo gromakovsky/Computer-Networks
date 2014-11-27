@@ -18,9 +18,6 @@ public:
    query_t(QObject * parent, QTcpSocket * socket, message_handler_t * message_handler, boost::filesystem::path const &);
    ~query_t();
 
-   void reading_finished();
-   void writing_finished();
-
 private slots:
    void read_from_socket();
    void display_error(QAbstractSocket::SocketError err);
