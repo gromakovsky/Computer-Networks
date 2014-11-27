@@ -1,5 +1,5 @@
 #include "client.h"
-#include "common.h"
+#include "common/common.h"
 #include "message_handler.h"
 
 #include <string>
@@ -14,7 +14,7 @@ struct client_t::implementation_t
 {
    QTcpSocket socket;
    message_handler_t * message_handler;
-   boost::optional<message_type> last_query_type;
+   boost::optional<message_type_t> last_query_type;
 
    implementation_t(message_handler_t * message_handler)
       : message_handler(message_handler)
