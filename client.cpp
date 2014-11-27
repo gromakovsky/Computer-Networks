@@ -96,12 +96,7 @@ void client_t::connection_established()
 
 void client_t::start_reading()
 {
-
    QByteArray const datagram = pimpl_->socket.readAll();
-   for (auto const & c : datagram)
-   {
-      qDebug() << unsigned(c);
-   }
 
    switch (*pimpl_->last_query_type)
    {

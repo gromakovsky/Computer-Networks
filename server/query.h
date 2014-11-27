@@ -19,8 +19,8 @@ public:
    ~query_t();
 
 private slots:
-   void read_from_socket();
-   void display_error(QAbstractSocket::SocketError err);
+   void data_read(QByteArray const &);
+//   void display_error(QAbstractSocket::SocketError err);
 
 private:
    struct implementation_t;

@@ -35,6 +35,56 @@ struct query_t::implementation_t
       assert(socket->state() == QAbstractSocket::ConnectedState);
    }
 
+   void data_read(QByteArray const & data)
+   {
+      buffer.append(data);
+      auto message_type = static_cast<message_type_t>(buffer.at(0));
+      switch (message_type)
+      {
+         case MT_LIST:
+         {
+            qDebug() << "Received LIST";
+            writer.consume(construct_list_response(path));
+            writer.finish();
+            break;
+         }
+         case MT_GET:
+         {
+            auto it = std::find(buffer.begin(), buffer.end(), '\0');
+            if (it != buffer.end())
+            {
+               qDebug() << "Received GET";
+               std::string filename(std::next(buffer.begin()), it);
+               writer.consume(construct_get_response(filename));
+               writer.finish();
+            }
+            break;
+         }
+         case MT_PUT:
+         {
+            qDebug() << "Received PUT";
+            auto idx = std::distance(std::find(buffer.begin(), buffer.end(), '\0'), buffer.begin());
+            if (idx + 8 < buffer.size())
+            {
+               size_t size = bytes_to_int(buffer.mid(idx + 1, 8));
+               if (idx + 8 + size < buffer.size())
+               {
+                  std::string filename(std::next(buffer.data(), idx));
+               }
+            }
+            //            QByteArray raw = pimpl_->socket->readAll();
+            //            std::string filename(raw.data());
+            //            auto start = raw.data() + filename.size() + 1;
+            //            auto size = bytes_to_int(QByteArray(start, 8));
+            //            std::string data = std::string(start + 8, size);
+            //            pimpl_->msg_args = std::make_pair(filename, data);
+            break;
+         }
+         default:
+            assert(false);
+      }
+   }
+
    void display_error(QAbstractSocket::SocketError err)
    {
       switch (err)
@@ -49,65 +99,6 @@ struct query_t::implementation_t
             break;
          default:
             message_handler->handle_error("The following error occurred: " + socket->errorString());
-      }
-   }
-
-   void read()
-   {
-      static const size_t try_read_size = 1 << 10;
-      static char buf[try_read_size];
-      auto res = socket->read(buf, try_read_size);
-      switch (res)
-      {
-         case -1:
-         {
-            display_error(socket->error());
-            return;
-         }
-         case 0:
-         {
-            reading_finished();
-            return;
-         }
-         default:
-         {
-            buffer.append(buf, res);
-            return;
-         }
-      }
-   }
-
-   void reading_finished()
-   {
-      auto message_type = static_cast<message_type_t>(buffer.at(0));
-      switch (message_type)
-      {
-         case MT_LIST:
-         {
-            qDebug() << "Received LIST";
-            writer.consume(construct_list_response(path));
-            break;
-         }
-         case MT_GET:
-         {
-            qDebug() << "Received GET";
-            std::string filename = std::string(std::next(buffer.begin()), buffer.end());
-            writer.consume(construct_get_response(filename));
-            break;
-         }
-         case MT_PUT:
-         {
-            qDebug() << "Received PUT";
-//            QByteArray raw = pimpl_->socket->readAll();
-//            std::string filename(raw.data());
-//            auto start = raw.data() + filename.size() + 1;
-//            auto size = bytes_to_int(QByteArray(start, 8));
-//            std::string data = std::string(start + 8, size);
-//            pimpl_->msg_args = std::make_pair(filename, data);
-            break;
-         }
-         default:
-            assert(false);
       }
    }
 
@@ -157,9 +148,9 @@ query_t::query_t(QObject * parent, QTcpSocket * socket, message_handler_t * mess
    : QObject(parent)
    , pimpl_(new implementation_t(socket, message_handler, path))
 {
-   connect(pimpl_->socket, SIGNAL(readyRead()), SLOT(read_from_socket()));
-   connect(pimpl_->socket, SIGNAL(error(QAbstractSocket::SocketError)),
-           SLOT(display_error(QAbstractSocket::SocketError)));
+   connect(&pimpl_->reader, SIGNAL(data_read(QByteArray const &)), SLOT(data_read(QByteArray const &)));
+//   connect(pimpl_->socket, SIGNAL(error(QAbstractSocket::SocketError)),
+//           SLOT(display_error(QAbstractSocket::SocketError)));
 
    connect(&pimpl_->writer, SIGNAL(finished()), SLOT(deleteLater()));
 }
@@ -168,12 +159,12 @@ query_t::~query_t()
 {
 }
 
-void query_t::read_from_socket()
+void query_t::data_read(QByteArray const & data)
 {
-   pimpl_->read();
+   pimpl_->data_read(data);
 }
 
-void query_t::display_error(QAbstractSocket::SocketError err)
-{
-   pimpl_->display_error(err);
-}
+//void query_t::display_error(QAbstractSocket::SocketError err)
+//{
+//   pimpl_->display_error(err);
+//}

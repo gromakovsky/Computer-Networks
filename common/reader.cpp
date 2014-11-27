@@ -16,6 +16,7 @@ struct reader_t::implementation_t
    void read()
    {
       auto size = socket->bytesAvailable();
+      qDebug() << size;
       data.resize(size);
       socket->read(data.data(), size);
    }
