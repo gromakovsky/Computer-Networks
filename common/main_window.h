@@ -3,20 +3,22 @@
 #include "host.h"
 
 #include <memory>
+#include <string>
 
 #include <QWidget>
 
-struct client_t;
+#include <boost/filesystem/path.hpp>
 
-struct message_handler_t : QWidget
+class QByteArray;
+
+struct main_window_t : QWidget
 {
    Q_OBJECT
 public:
-   message_handler_t(QWidget * parent = nullptr);
-   ~message_handler_t();
+   main_window_t(QByteArray const & ip, std::string const & name, boost::filesystem::path const &);
+   ~main_window_t();
 
    void add_host(host_t const &);
-   void set_client(client_t *);
 
    void handle_error(QString const & description);
 

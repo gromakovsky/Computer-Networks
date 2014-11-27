@@ -1,7 +1,7 @@
 #include "common/common.h"
 #include "query.h"
 #include "message_constructor.h"
-#include "common/message_handler.h"
+#include "common/main_window.h"
 #include "common/reader.h"
 #include "common/writer.h"
 
@@ -18,14 +18,14 @@ namespace fs = boost::filesystem;
 struct query_t::implementation_t
 {
    QTcpSocket * socket;
-   message_handler_t * message_handler;
+   main_window_t * message_handler;
    fs::path const path;
 
    QByteArray buffer;
    reader_t reader;
    writer_t writer;
 
-   implementation_t(QTcpSocket * socket, message_handler_t * message_handler, fs::path const & path)
+   implementation_t(QTcpSocket * socket, main_window_t * message_handler, fs::path const & path)
       : socket(socket)
       , message_handler(message_handler)
       , path(path)
@@ -144,7 +144,7 @@ struct query_t::implementation_t
 //   }
 };
 
-query_t::query_t(QObject * parent, QTcpSocket * socket, message_handler_t * message_handler, fs::path const & path)
+query_t::query_t(QObject * parent, QTcpSocket * socket, main_window_t * message_handler, fs::path const & path)
    : QObject(parent)
    , pimpl_(new implementation_t(socket, message_handler, path))
 {

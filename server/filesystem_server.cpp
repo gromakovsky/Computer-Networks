@@ -1,6 +1,6 @@
 #include "common/common.h"
 #include "filesystem_server.h"
-#include "common/message_handler.h"
+#include "common/main_window.h"
 #include "query.h"
 
 #include <cassert>
@@ -16,10 +16,10 @@ struct filesystem_server_t::implementation_t
    QTcpServer server;
    QTcpSocket socket;
 
-   message_handler_t * message_handler;
+   main_window_t * message_handler;
    fs::path const path;
 
-   implementation_t(message_handler_t * message_handler, fs::path const & path)
+   implementation_t(main_window_t * message_handler, fs::path const & path)
       : message_handler(message_handler)
       , path(path)
    {
@@ -31,7 +31,7 @@ struct filesystem_server_t::implementation_t
    }
 };
 
-filesystem_server_t::filesystem_server_t(message_handler_t * message_handler, boost::filesystem::path const & path)
+filesystem_server_t::filesystem_server_t(main_window_t * message_handler, boost::filesystem::path const & path)
    : pimpl_(new implementation_t(message_handler, path))
 {
    connect(&pimpl_->server, SIGNAL(newConnection()), SLOT(accept_connection()));

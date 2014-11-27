@@ -6,14 +6,14 @@
 
 #include <boost/filesystem/path.hpp>
 
-struct message_handler_t;
+struct main_window_t;
 
 struct filesystem_server_t : QObject
 {
    Q_OBJECT
 
 public:
-   filesystem_server_t(message_handler_t * message_handler, boost::filesystem::path const & path);
+   filesystem_server_t(main_window_t * message_handler, boost::filesystem::path const & path);
    ~filesystem_server_t();
 
 private slots:

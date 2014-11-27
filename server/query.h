@@ -8,14 +8,14 @@
 #include <boost/filesystem/path.hpp>
 
 class QTcpSocket;
-struct message_handler_t;
+struct main_window_t;
 
 struct query_t : QObject
 {
    Q_OBJECT
 
 public:
-   query_t(QObject * parent, QTcpSocket * socket, message_handler_t * message_handler, boost::filesystem::path const &);
+   query_t(QObject * parent, QTcpSocket * socket, main_window_t * message_handler, boost::filesystem::path const &);
    ~query_t();
 
 private slots:

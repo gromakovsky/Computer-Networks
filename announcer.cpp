@@ -1,7 +1,7 @@
 #include "common/common.h"
 #include "announcer.h"
 #include "host.h"
-#include "common/message_handler.h"
+#include "common/main_window.h"
 
 #include <cstdint>
 #include <iostream>
@@ -42,10 +42,10 @@ struct announcer_t::implementation_t
    QUdpSocket socket;
    QTimer timer;
 
-   message_handler_t * message_handler;
+   main_window_t * message_handler;
 
    implementation_t(QByteArray const & ip, std::string const & name, fs::path const & path,
-                    message_handler_t * message_handler)
+                    main_window_t * message_handler)
       : ip(ip)
       , name(name)
       , path(path)
@@ -112,7 +112,7 @@ struct announcer_t::implementation_t
 };
 
 announcer_t::announcer_t(QByteArray const & ip, std::string const & name, boost::filesystem::path const & path,
-                         message_handler_t * message_handler)
+                         main_window_t * message_handler)
    : pimpl_(new implementation_t(ip, name, path, message_handler))
 {
    connect(&pimpl_->timer, SIGNAL(timeout()), SLOT(send_announce()));

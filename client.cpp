@@ -1,6 +1,6 @@
 #include "client.h"
 #include "common/common.h"
-#include "common/message_handler.h"
+#include "common/main_window.h"
 
 #include <string>
 #include <stdexcept>
@@ -13,16 +13,16 @@
 struct client_t::implementation_t
 {
    QTcpSocket socket;
-   message_handler_t * message_handler;
+   main_window_t * message_handler;
    boost::optional<message_type_t> last_query_type;
 
-   implementation_t(message_handler_t * message_handler)
+   implementation_t(main_window_t * message_handler)
       : message_handler(message_handler)
    {
    }
 };
 
-client_t::client_t(message_handler_t * message_handler)
+client_t::client_t(main_window_t * message_handler)
    : pimpl_(new implementation_t(message_handler))
 {
    connect(&pimpl_->socket, SIGNAL(connected()), SLOT(connection_established()));

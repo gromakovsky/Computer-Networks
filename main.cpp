@@ -1,7 +1,7 @@
 #include "announcer.h"
 #include "server/filesystem_server.h"
 #include "client.h"
-#include "common/message_handler.h"
+#include "common/main_window.h"
 
 #include <iostream>
 
@@ -45,16 +45,8 @@ int main(int argc, char * argv[])
    QApplication qapp(argc, argv);
    fs::create_directory(path);
 
-   message_handler_t msg_handler;
+   main_window_t msg_handler(my_ip(), my_name, path);
    msg_handler.show();
-
-   announcer_t announcer(my_ip(), my_name, path, &msg_handler);
-   announcer.start();
-
-   filesystem_server_t server(&msg_handler, path);
-
-   client_t client(&msg_handler);
-   msg_handler.set_client(&client);
 
    return qapp.exec();
 }

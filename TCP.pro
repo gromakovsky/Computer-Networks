@@ -15,7 +15,7 @@ LIBS += -lboost_system
 
 SOURCES += main.cpp \
     announcer.cpp \
-    common/message_handler.cpp \
+    common/main_window.cpp \
     server/filesystem_server.cpp \
     server/query.cpp \
     server/message_constructor.cpp \
@@ -29,8 +29,8 @@ qtcAddDeployment()
 
 HEADERS += \
     announcer.h \
-    common/message_handler.h \
     common/common.h \
+    common/main_window.h \
     host.h \
     server/filesystem_server.h \
     server/query.h \

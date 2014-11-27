@@ -7,14 +7,14 @@
 #include <QObject>
 #include <QAbstractSocket>
 
-struct message_handler_t;
+struct main_window_t;
 
 struct client_t : QObject
 {
    Q_OBJECT
 
 public:
-   client_t(message_handler_t * message_handler);
+   client_t(main_window_t * message_handler);
    ~client_t();
 
    void query_list(QString const & host);
