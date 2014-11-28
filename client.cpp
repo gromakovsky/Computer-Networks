@@ -65,6 +65,7 @@ void client_t::query_get(QString const & host, std::string const & filename)
    QByteArray query;
    query.push_back(static_cast<unsigned char>(MT_GET));
    query.append(filename.data(), filename.size());
+   query.push_back('\0');
    pimpl_->socket.write(query);
 }
 
