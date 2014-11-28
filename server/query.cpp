@@ -55,21 +55,25 @@ struct query_t::implementation_t
             {
                qDebug() << "Received GET";
                std::string filename(std::next(buffer.begin()), it);
-               writer.consume(construct_get_response(filename));
+               writer.consume(construct_get_response(path / filename));
                writer.finish();
             }
             break;
          }
          case MT_PUT:
          {
-            qDebug() << "Received PUT";
-            auto idx = std::distance(std::find(buffer.begin(), buffer.end(), '\0'), buffer.begin());
+            auto idx = std::distance(buffer.begin(), std::find(buffer.begin(), buffer.end(), '\0'));
             if (idx + 8 < buffer.size())
             {
-               size_t size = bytes_to_int(buffer.mid(idx + 1, 8));
-               if (idx + 8 + size < static_cast<size_t>(buffer.size()))
+               size_t size_start_idx = idx + 1;
+               size_t size = bytes_to_int(buffer.mid(size_start_idx, 8));
+               size_t data_start_idx = size_start_idx + 8;
+               if (data_start_idx + size <= static_cast<size_t>(buffer.size()))
                {
-                  std::string filename(std::next(buffer.data(), idx));
+                  qDebug() << "Received PUT";
+                  std::string filename(std::next(buffer.data()), idx - 1);
+                  fs::ofstream out(path / filename, std::ios_base::binary);
+                  boost::copy(buffer.mid(data_start_idx, size), std::ostream_iterator<char>(out));
                }
             }
             //            QByteArray raw = pimpl_->socket->readAll();
