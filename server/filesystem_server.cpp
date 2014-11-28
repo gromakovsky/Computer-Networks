@@ -14,25 +14,24 @@ namespace fs = boost::filesystem;
 struct filesystem_server_t::implementation_t
 {
    QTcpServer server;
-   QTcpSocket socket;
 
-   main_window_t * message_handler;
+   main_window_t * main_window;
    fs::path const path;
 
-   implementation_t(main_window_t * message_handler, fs::path const & path)
-      : message_handler(message_handler)
+   implementation_t(main_window_t * main_window, fs::path const & path)
+      : main_window(main_window)
       , path(path)
    {
       if (!server.listen(QHostAddress::Any, default_port()))
       {
-          message_handler->handle_error("Unable to start the server: " + server.errorString());
+          main_window->handle_error("Unable to start the server: " + server.errorString());
           return;
       }
    }
 };
 
-filesystem_server_t::filesystem_server_t(main_window_t * message_handler, boost::filesystem::path const & path)
-   : pimpl_(new implementation_t(message_handler, path))
+filesystem_server_t::filesystem_server_t(main_window_t * main_window, boost::filesystem::path const & path)
+   : pimpl_(new implementation_t(main_window, path))
 {
    connect(&pimpl_->server, SIGNAL(newConnection()), SLOT(accept_connection()));
 }
@@ -44,5 +43,5 @@ filesystem_server_t::~filesystem_server_t()
 void filesystem_server_t::accept_connection()
 {
    assert(pimpl_->server.hasPendingConnections());
-   new query_t(this, pimpl_->server.nextPendingConnection(), pimpl_->message_handler, pimpl_->path);
+   new query_t(this, pimpl_->server.nextPendingConnection(), pimpl_->main_window, pimpl_->path);
 }

@@ -13,7 +13,7 @@ struct filesystem_server_t : QObject
    Q_OBJECT
 
 public:
-   filesystem_server_t(main_window_t * message_handler, boost::filesystem::path const & path);
+   filesystem_server_t(main_window_t *, boost::filesystem::path const &);
    ~filesystem_server_t();
 
 private slots:
