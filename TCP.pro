@@ -32,6 +32,7 @@ HEADERS += \
     common/common.h \
     common/main_window.h \
     common/host.h \
+    common/response.h \
     server/filesystem_server.h \
     server/query.h \
     server/message_constructor.h \
