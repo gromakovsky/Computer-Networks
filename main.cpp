@@ -45,8 +45,8 @@ int main(int argc, char * argv[])
    QApplication qapp(argc, argv);
    fs::create_directory(path);
 
-   main_window_t msg_handler(my_ip(), my_name, path);
-   msg_handler.show();
+   main_window_t main_window(my_ip(), my_name, path);
+   main_window.show();
 
    return qapp.exec();
 }
