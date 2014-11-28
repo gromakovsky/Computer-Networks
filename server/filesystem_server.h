@@ -6,15 +6,16 @@
 
 #include <boost/filesystem/path.hpp>
 
-struct main_window_t;
-
 struct filesystem_server_t : QObject
 {
    Q_OBJECT
 
 public:
-   filesystem_server_t(main_window_t *, boost::filesystem::path const &);
+   filesystem_server_t(boost::filesystem::path const &);
    ~filesystem_server_t();
+
+signals:
+   void error_occured(QString const & description);
 
 private slots:
    void accept_connection();

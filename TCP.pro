@@ -31,7 +31,7 @@ HEADERS += \
     announcer.h \
     common/common.h \
     common/main_window.h \
-    host.h \
+    common/host.h \
     server/filesystem_server.h \
     server/query.h \
     server/message_constructor.h \

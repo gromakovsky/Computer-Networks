@@ -1,11 +1,12 @@
-#include "common/common.h"
 #include "announcer.h"
-#include "host.h"
+#include "common/common.h"
+#include "common/host.h"
 #include "common/main_window.h"
 
 #include <cstdint>
 #include <iostream>
 #include <ctime>
+#include <functional>
 
 #include <QUdpSocket>
 #include <QTimer>
@@ -42,14 +43,19 @@ struct announcer_t::implementation_t
    QUdpSocket socket;
    QTimer timer;
 
-   main_window_t * message_handler;
+   typedef std::function<void(host_t &&)> host_added_callback_t;
+   host_added_callback_t host_added_callback;
+   typedef std::function<void(QString const &)> error_callback_t;
+   error_callback_t error_callback;
 
    implementation_t(QByteArray const & ip, std::string const & name, fs::path const & path,
-                    main_window_t * message_handler)
+                    host_added_callback_t const & host_added_callback,
+                    error_callback_t const & error_callback)
       : ip(ip)
       , name(name)
       , path(path)
-      , message_handler(message_handler)
+      , host_added_callback(host_added_callback)
+      , error_callback(error_callback)
    {
    }
 
@@ -80,11 +86,11 @@ struct announcer_t::implementation_t
       auto res = socket.writeDatagram(msg, QHostAddress::Broadcast, default_port());
       if (res == -1)
       {
-         message_handler->handle_error(socket.errorString());
+         error_callback(socket.errorString());
       }
       else if (res != msg.size())
       {
-         message_handler->handle_error("Datagram was not fully sent");
+         error_callback("Datagram was not fully sent");
       }
    }
 
@@ -97,8 +103,7 @@ struct announcer_t::implementation_t
          socket.readDatagram(datagram.data(), datagram.size());
          if (datagram.size() <= 16)
          {
-            BOOST_THROW_EXCEPTION(std::runtime_error("Received truncated datagram with size "
-                                                     + std::to_string(datagram.size())));
+            error_callback("Received truncated UDP datagram with size " + QString::number(datagram.size()));
          }
 
          std::string const ip = parse_ip(datagram.data());
@@ -106,14 +111,15 @@ struct announcer_t::implementation_t
          size_t files_count = bytes_to_int(QByteArray(datagram.data() + 4, 4));
          std::uint64_t timestamp = bytes_to_int(QByteArray(datagram.data() + 8, 8));
 
-         message_handler->add_host(host_t(ip, name, files_count, timestamp));
+         host_added_callback(host_t(ip, name, files_count, timestamp));
       }
    }
 };
 
-announcer_t::announcer_t(QByteArray const & ip, std::string const & name, boost::filesystem::path const & path,
-                         main_window_t * message_handler)
-   : pimpl_(new implementation_t(ip, name, path, message_handler))
+announcer_t::announcer_t(QByteArray const & ip, std::string const & name, boost::filesystem::path const & path)
+   : pimpl_(new implementation_t(ip, name, path, [this](host_t && host){emit host_added(std::move(host));},
+                                                 [this](QString const & e){emit error_occured(e);})
+                                 )
 {
    connect(&pimpl_->timer, SIGNAL(timeout()), SLOT(send_announce()));
    connect(&pimpl_->socket, SIGNAL(readyRead()), SLOT(read_announce()));

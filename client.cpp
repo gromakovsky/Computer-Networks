@@ -144,17 +144,17 @@ void client_t::start_reading()
 
 void client_t::handle_error(QAbstractSocket::SocketError err)
 {
-   switch (err)
-   {
-      case QAbstractSocket::RemoteHostClosedError:
-         break;
-      case QAbstractSocket::HostNotFoundError:
-         pimpl_->message_handler->handle_error("The host was not found. Please check the host name and port settings.");
-         break;
-      case QAbstractSocket::ConnectionRefusedError:
-         pimpl_->message_handler->handle_error("The connection was refused by the peer.");
-         break;
-      default:
-         pimpl_->message_handler->handle_error("The following error occurred: " + pimpl_->socket.errorString());
-   }
+//   switch (err)
+//   {
+//      case QAbstractSocket::RemoteHostClosedError:
+//         break;
+//      case QAbstractSocket::HostNotFoundError:
+//         pimpl_->message_handler->handle_error("The host was not found. Please check the host name and port settings.");
+//         break;
+//      case QAbstractSocket::ConnectionRefusedError:
+//         pimpl_->message_handler->handle_error("The connection was refused by the peer.");
+//         break;
+//      default:
+//         pimpl_->message_handler->handle_error("The following error occurred: " + pimpl_->socket.errorString());
+//   }
 }

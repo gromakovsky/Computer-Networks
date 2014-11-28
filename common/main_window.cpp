@@ -37,8 +37,8 @@ struct main_window_t::implementation_t
       , msg_host_edit("localhost")
       , msg_type_edit("LIST")
       , msg_send_button("Send")
-      , announcer(ip, name, path, main_window)
-      , server(main_window, path)
+      , announcer(ip, name, path)
+      , server(path)
       , client(main_window)
    {
       announcer.start();
@@ -66,25 +66,31 @@ main_window_t::main_window_t(QByteArray const & ip, std::string const & name, bo
    setLayout(layout);
 
    connect(&pimpl_->msg_send_button, SIGNAL(clicked()), SLOT(send_query()));
+
+   connect(&pimpl_->announcer, SIGNAL(host_added(host_t)), SLOT(add_host(host_t)));
+   connect(&pimpl_->announcer, SIGNAL(error_occured(QString const &)), SLOT(handle_error(QString const &)));
+
+   connect(&pimpl_->server, SIGNAL(error_occured(QString const &)), SLOT(handle_error(QString const &)));
 }
 
 main_window_t::~main_window_t()
 {
 }
 
-void main_window_t::add_host(host_t const & host)
+void main_window_t::add_host(host_t host)
 {
    auto it = pimpl_->entries.find(host.name);
    if (it == pimpl_->entries.end())
    {
       size_t idx = pimpl_->table.rowCount();
-      pimpl_->entries.insert({host.name, idx});
 
       pimpl_->table.insertRow(idx);
       pimpl_->table.setItem(idx, 0, new QTableWidgetItem(host.ip.c_str()));
       pimpl_->table.setItem(idx, 1, new QTableWidgetItem(host.name.c_str()));
       pimpl_->table.setItem(idx, 2, new QTableWidgetItem(std::to_string(host.files_count).c_str()));
       pimpl_->table.setItem(idx, 3, new QTableWidgetItem(std::to_string(host.timestamp).c_str()));
+
+      pimpl_->entries.emplace(std::move(host.name), idx);
    }
    else
    {

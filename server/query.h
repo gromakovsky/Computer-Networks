@@ -15,12 +15,15 @@ struct query_t : QObject
    Q_OBJECT
 
 public:
-   query_t(QObject * parent, QTcpSocket * socket, main_window_t * message_handler, boost::filesystem::path const &);
+   query_t(QObject * parent, QTcpSocket * socket, boost::filesystem::path const &);
    ~query_t();
+
+signals:
+   void error_occured(QString const & description);
 
 private slots:
    void data_read(QByteArray const &);
-//   void display_error(QAbstractSocket::SocketError err);
+   void display_error(QAbstractSocket::SocketError err);
 
 private:
    struct implementation_t;
