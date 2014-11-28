@@ -67,7 +67,7 @@ struct query_t::implementation_t
             if (idx + 8 < buffer.size())
             {
                size_t size = bytes_to_int(buffer.mid(idx + 1, 8));
-               if (idx + 8 + size < buffer.size())
+               if (idx + 8 + size < static_cast<size_t>(buffer.size()))
                {
                   std::string filename(std::next(buffer.data(), idx));
                }
