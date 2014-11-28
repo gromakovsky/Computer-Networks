@@ -16,6 +16,34 @@
 
 #include <boost/format.hpp>
 
+struct response_visitor_t : boost::static_visitor<QString>
+{
+   QString operator()(response_t::list_response_data_t const & files_info) const
+   {
+      std::string msg = "Last response (to `LIST' query):\n";
+      for (auto const & pair : files_info)
+      {
+         msg += pair.second + " (md5 = " + pair.first + ")\n";
+      }
+
+      return QString::fromStdString(msg);
+   }
+
+   QString operator()(response_t::get_response_data_t const & fileinfo) const
+   {
+      auto msg = boost::format("Last response (to 'GET' query):\nSize = %1%, md5 = %2%, data:\n%3%")
+            % fileinfo.second.size()
+            % fileinfo.first
+            % fileinfo.second;
+      return QString::fromStdString(str(msg));
+   }
+
+   QString operator()(response_t::error_response_data_t const & err) const
+   {
+      return QString::fromStdString("Error");
+   }
+};
+
 struct main_window_t::implementation_t
 {
    QTableWidget table;
@@ -30,15 +58,14 @@ struct main_window_t::implementation_t
    filesystem_server_t server;
    client_t client;
 
-   implementation_t(QByteArray const & ip, std::string const & name, boost::filesystem::path const & path,
-                    main_window_t * main_window)
+   implementation_t(QByteArray const & ip, std::string const & name, boost::filesystem::path const & path)
       : table(0, 4)
       , msg_host_edit("localhost")
       , msg_type_edit("LIST")
       , msg_send_button("Send")
       , announcer(ip, name, path)
       , server(path)
-      , client(main_window)
+      , client()
    {
       announcer.start();
       table.setHorizontalHeaderLabels(QStringList()
@@ -51,7 +78,7 @@ struct main_window_t::implementation_t
 };
 
 main_window_t::main_window_t(QByteArray const & ip, std::string const & name, boost::filesystem::path const & path)
-   : pimpl_(new implementation_t(ip, name, path, this))
+   : pimpl_(new implementation_t(ip, name, path))
 {
    QHBoxLayout * msg_send_layout = new QHBoxLayout;
    msg_send_layout->addWidget(&pimpl_->msg_host_edit);
@@ -70,6 +97,8 @@ main_window_t::main_window_t(QByteArray const & ip, std::string const & name, bo
    connect(&pimpl_->announcer, SIGNAL(error_occured(QString const &)), SLOT(handle_error(QString const &)));
 
    connect(&pimpl_->server, SIGNAL(error_occured(QString const &)), SLOT(handle_error(QString const &)));
+
+   connect(&pimpl_->client, SIGNAL(error_occured(QString const &)), SLOT(handle_error(QString const &)));
 }
 
 main_window_t::~main_window_t()
@@ -102,28 +131,15 @@ void main_window_t::add_host(host_t host)
    }
 }
 
+void main_window_t::handle_response(response_t const & response)
+{
+   auto msg = boost::apply_visitor(response_visitor_t(), response.data);
+   pimpl_->response_label.setText(msg);
+}
+
 void main_window_t::handle_error(QString const & description)
 {
    QMessageBox::critical(this, "Error occured", description);
-}
-
-void main_window_t::handle_list_response(std::vector<std::pair<std::string, std::string> > const & files_info)
-{
-   std::string msg = "Last response (to 'LIST' query):\n";
-   for (auto const & pair : files_info)
-   {
-      msg += pair.second + " (md5 = " + pair.first + ")\n";
-   }
-   pimpl_->response_label.setText(msg.c_str());
-}
-
-void main_window_t::handle_get_response(std::pair<std::string, std::string> const & fileinfo)
-{
-   auto msg = boost::format("Last response (to 'GET' query):\nSize = %1%, md5 = %2%, data:\n%3%")
-         % fileinfo.second.size()
-         % fileinfo.first
-         % fileinfo.second;
-   pimpl_->response_label.setText(boost::str(msg).c_str());
 }
 
 void main_window_t::send_query()
