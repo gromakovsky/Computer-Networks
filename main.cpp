@@ -1,9 +1,4 @@
-#include "announcer.h"
-#include "server/filesystem_server.h"
-#include "client.h"
 #include "common/main_window.h"
-
-#include <iostream>
 
 #include <boost/filesystem.hpp>
 

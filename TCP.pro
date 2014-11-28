@@ -19,7 +19,7 @@ SOURCES += main.cpp \
     server/filesystem_server.cpp \
     server/query.cpp \
     server/message_constructor.cpp \
-    client.cpp \
+    client/client.cpp \
     common/md5.cpp \
     common/writer.cpp \
     common/reader.cpp
@@ -35,7 +35,7 @@ HEADERS += \
     server/filesystem_server.h \
     server/query.h \
     server/message_constructor.h \
-    client.h \
+    client/client.h \
     common/md5.h \
     common/writer.h \
     common/reader.h

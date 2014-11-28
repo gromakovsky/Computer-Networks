@@ -1,9 +1,8 @@
 #include "main_window.h"
-#include "client.h"
 
 #include "announcer.h"
 #include "server/filesystem_server.h"
-#include "client.h"
+#include "client/client.h"
 
 #include <unordered_map>
 
