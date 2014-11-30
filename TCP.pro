@@ -3,9 +3,9 @@ CONFIG += console
 CONFIG -= app_bundle
 CONFIG += c++11
 
-QMAKE_CXXFLAGS+="-fsanitize=address -fno-omit-frame-pointer"
-QMAKE_CFLAGS+="-fsanitize=address -fno-omit-frame-pointer"
-QMAKE_LFLAGS+="-fsanitize=address"
+#QMAKE_CXXFLAGS+="-fsanitize=address -fno-omit-frame-pointer"
+#QMAKE_CFLAGS+="-fsanitize=address -fno-omit-frame-pointer"
+#QMAKE_LFLAGS+="-fsanitize=address"
 
 QT += network
 QT += widgets
