@@ -43,7 +43,6 @@ struct server_query_t::implementation_t
       {
          case MT_LIST:
          {
-            qDebug() << "Received LIST";
             writer.consume(construct_list_response(path));
             writer.finish();
             break;
@@ -53,7 +52,6 @@ struct server_query_t::implementation_t
             auto it = std::find(buffer.begin(), buffer.end(), '\0');
             if (it != buffer.end())
             {
-               qDebug() << "Received GET";
                std::string filename(std::next(buffer.begin()), it);
                writer.consume(construct_get_response(path / filename));
                writer.finish();
@@ -70,7 +68,6 @@ struct server_query_t::implementation_t
                size_t data_start_idx = size_start_idx + 8;
                if (data_start_idx + size <= static_cast<size_t>(buffer.size()))
                {
-                  qDebug() << "Received PUT";
                   std::string filename(std::next(buffer.data()), idx - 1);
                   fs::ofstream out(path / filename, std::ios_base::binary);
                   boost::copy(buffer.mid(data_start_idx, size), std::ostream_iterator<char>(out));
