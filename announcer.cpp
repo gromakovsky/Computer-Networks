@@ -12,7 +12,6 @@
 #include <QTimer>
 
 #include <boost/filesystem.hpp>
-#include <boost/throw_exception.hpp>
 
 namespace fs = boost::filesystem;
 
