@@ -49,12 +49,19 @@ struct response_visitor_t : boost::static_visitor<QString>
 
 struct main_window_t::implementation_t
 {
+   QTextEdit name_edit;
+   QTextEdit path_edit;
+
    QTableWidget table;
+
    QTextEdit msg_host_edit;
    QTextEdit msg_type_edit;
-   QTextEdit msg_args_edit;
+   QTextEdit msg_filename_edit;
+   QTextEdit msg_data_edit;
    QPushButton msg_send_button;
+
    QLabel response_label;
+
    std::unordered_map<std::string, size_t> entries; // name -> row
 
    announcer_t announcer;
@@ -71,28 +78,79 @@ struct main_window_t::implementation_t
       , client()
    {
       announcer.start();
+      name_edit.setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Preferred);
+      name_edit.setText(QString::fromStdString(name));
+      path_edit.setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Preferred);
+      path_edit.setText(QString::fromStdString(path.string()));
+
       table.setHorizontalHeaderLabels(QStringList()
                                       << "IP"
                                       << "Name"
                                       << "Files count"
                                       << "Timestamp"
                                       );
+      table.setSelectionBehavior(QAbstractItemView::SelectRows);
    }
 };
 
 main_window_t::main_window_t(QByteArray const & ip, std::string const & name, boost::filesystem::path const & path)
    : pimpl_(new implementation_t(ip, name, path))
 {
-   QHBoxLayout * msg_send_layout = new QHBoxLayout;
-   msg_send_layout->addWidget(&pimpl_->msg_host_edit);
-   msg_send_layout->addWidget(&pimpl_->msg_type_edit);
-   msg_send_layout->addWidget(&pimpl_->msg_args_edit);
-   msg_send_layout->addWidget(&pimpl_->msg_send_button);
-   QVBoxLayout * layout = new QVBoxLayout;
-   layout->addLayout(msg_send_layout);
-   layout->addWidget(&pimpl_->response_label);
-   layout->addWidget(&pimpl_->table);
-   setLayout(layout);
+   QVBoxLayout * main_layout = new QVBoxLayout;
+   main_layout->setSpacing(12);
+   {
+      auto announcer_layout = new QHBoxLayout;
+      {
+         auto params_layout = new QVBoxLayout;
+
+         auto name_label = new QLabel("Name:");
+         name_label->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Preferred);
+         params_layout->addWidget(name_label);
+         params_layout->addWidget(&pimpl_->name_edit);
+
+         auto path_label = new QLabel("Path:");
+         name_label->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Preferred);
+         params_layout->addWidget(path_label);
+         params_layout->addWidget(&pimpl_->path_edit);
+
+         announcer_layout->addLayout(params_layout);
+      }
+      announcer_layout->addWidget(&pimpl_->table);
+      main_layout->addLayout(announcer_layout);
+   }
+   {
+      auto client_layout = new QHBoxLayout;
+
+      {
+         auto params_layout = new QVBoxLayout;
+
+         auto host_label = new QLabel("Host:");
+         host_label->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Preferred);
+         params_layout->addWidget(host_label);
+         params_layout->addWidget(&pimpl_->msg_host_edit);
+
+         auto type_label = new QLabel("Type:");
+         type_label->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Preferred);
+         params_layout->addWidget(type_label);
+         params_layout->addWidget(&pimpl_->msg_type_edit);
+
+         auto filename_label = new QLabel("Filename:");
+         filename_label->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Preferred);
+         params_layout->addWidget(filename_label);
+         params_layout->addWidget(&pimpl_->msg_filename_edit);
+
+         params_layout->addWidget(&pimpl_->msg_send_button);
+
+         client_layout->addLayout(params_layout);
+      }
+
+      client_layout->addWidget(&pimpl_->msg_data_edit);
+      client_layout->addWidget(&pimpl_->response_label);
+
+      main_layout->addLayout(client_layout);
+   }
+
+   setLayout(main_layout);
 
    connect(&pimpl_->msg_send_button, SIGNAL(clicked()), SLOT(send_query()));
 
@@ -150,7 +208,8 @@ void main_window_t::send_query()
 {
    auto type = pimpl_->msg_type_edit.toPlainText();
    auto host = pimpl_->msg_host_edit.toPlainText();
-   QString args = pimpl_->msg_args_edit.toPlainText();
+   QString filename = pimpl_->msg_filename_edit.toPlainText();
+   QString data = pimpl_->msg_data_edit.toPlainText();
    if (type == "LIST")
    {
       request_t request;
@@ -164,16 +223,15 @@ void main_window_t::send_query()
       request_t request;
       request.type = request_t::RT_GET;
       request.host = host;
-      request.data = args.toStdString();
+      request.data = filename.toStdString();
       pimpl_->client.process_request(request);
    }
    else if (type == "PUT")
    {
-      auto split = args.split("\n");
       request_t request;
       request.type = request_t::RT_PUT;
       request.host = host;
-      request.data = std::make_pair(split[0].toStdString(), split[1].toStdString());
+      request.data = std::make_pair(filename.toStdString(), data.toStdString());
       pimpl_->client.process_request(request);
    }
 }
