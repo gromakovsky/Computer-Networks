@@ -37,7 +37,7 @@ struct client_query_t::implementation_t
    void data_read(QByteArray const & data)
    {
       buffer.append(data);
-      auto message_type = static_cast<message_type_t>(buffer.at(0));
+      auto message_type = static_cast<message_type_t>(static_cast<unsigned char>(buffer.at(0)));
       switch (message_type)
       {
          case MT_LIST_RESPONSE:
