@@ -59,7 +59,8 @@ inline std::uint64_t bytes_to_int(QByteArray const & bytes)
    std::uint64_t res = 0;
    for (int i = 0; i != bytes.size(); ++i)
    {
-      res += bytes[bytes.size() - i - 1] << (i * 8);
+      unsigned char c = bytes[bytes.size() - i - 1];
+      res += static_cast<std::uint64_t>(c) << (i * 8);
    }
 
    return res;
