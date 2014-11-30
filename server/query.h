@@ -25,6 +25,8 @@ private slots:
    void data_read(QByteArray const &);
    void display_error(QAbstractSocket::SocketError err);
 
+   void finish();
+
 private:
    struct implementation_t;
    std::unique_ptr<implementation_t> pimpl_;

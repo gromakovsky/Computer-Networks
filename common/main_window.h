@@ -1,7 +1,6 @@
 #pragma once
 
 #include "host.h"
-#include "response.h"
 
 #include <memory>
 #include <string>
@@ -11,6 +10,7 @@
 #include <boost/filesystem/path.hpp>
 
 class QByteArray;
+struct response_t;
 
 struct main_window_t : QWidget
 {

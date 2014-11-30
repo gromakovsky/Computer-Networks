@@ -19,10 +19,12 @@ SOURCES += main.cpp \
     server/filesystem_server.cpp \
     server/query.cpp \
     server/message_constructor.cpp \
-    client/client.cpp \
     common/md5.cpp \
     common/writer.cpp \
-    common/reader.cpp
+    common/reader.cpp \
+    client/request_message_constructor.cpp \
+    client/client.cpp \
+    client/client_query.cpp
 
 include(deployment.pri)
 qtcAddDeployment()
@@ -39,5 +41,7 @@ HEADERS += \
     client/client.h \
     common/md5.h \
     common/writer.h \
-    common/reader.h
-
+    common/reader.h \
+    common/request.h \
+    client/request_message_constructor.h \
+    client/client_query.h

@@ -3,6 +3,8 @@
 #include "announcer.h"
 #include "server/filesystem_server.h"
 #include "client/client.h"
+#include "common/response.h"
+#include "common/request.h"
 
 #include <unordered_map>
 
@@ -15,6 +17,7 @@
 #include <QPushButton>
 
 #include <boost/format.hpp>
+#include <boost/variant/static_visitor.hpp>
 
 struct response_visitor_t : boost::static_visitor<QString>
 {
@@ -98,6 +101,7 @@ main_window_t::main_window_t(QByteArray const & ip, std::string const & name, bo
 
    connect(&pimpl_->server, SIGNAL(error_occured(QString const &)), SLOT(handle_error(QString const &)));
 
+   connect(&pimpl_->client, SIGNAL(response_arrived(response_t const &)), SLOT(handle_response(response_t const &)));
    connect(&pimpl_->client, SIGNAL(error_occured(QString const &)), SLOT(handle_error(QString const &)));
 }
 
@@ -149,15 +153,27 @@ void main_window_t::send_query()
    QString args = pimpl_->msg_args_edit.toPlainText();
    if (type == "LIST")
    {
-      pimpl_->client.query_list(host);
+      request_t request;
+      request.type = request_t::RT_LIST;
+      request.host = host;
+      request.data = nullptr;
+      pimpl_->client.process_request(request);
    }
    else if (type == "GET")
    {
-      pimpl_->client.query_get(host, args.toStdString());
+      request_t request;
+      request.type = request_t::RT_GET;
+      request.host = host;
+      request.data = args.toStdString();
+      pimpl_->client.process_request(request);
    }
    else if (type == "PUT")
    {
       auto split = args.split("\n");
-      pimpl_->client.query_put(host, split[0].toStdString(), split[1].toStdString());
+      request_t request;
+      request.type = request_t::RT_PUT;
+      request.host = host;
+      request.data = std::make_pair(split[0].toStdString(), split[1].toStdString());
+      pimpl_->client.process_request(request);
    }
 }

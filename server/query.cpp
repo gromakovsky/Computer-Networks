@@ -108,7 +108,7 @@ query_t::query_t(QObject * parent, QTcpSocket * socket, fs::path const & path)
    connect(pimpl_->socket, SIGNAL(error(QAbstractSocket::SocketError)),
            SLOT(display_error(QAbstractSocket::SocketError)));
 
-   connect(&pimpl_->writer, SIGNAL(finished()), SLOT(deleteLater()));
+   connect(&pimpl_->writer, SIGNAL(finished()), SLOT(finish()));
 }
 
 query_t::~query_t()
@@ -123,4 +123,11 @@ void query_t::data_read(QByteArray const & data)
 void query_t::display_error(QAbstractSocket::SocketError err)
 {
    emit error_occured(pimpl_->get_error_description(err));
+}
+
+void query_t::finish()
+{
+//   pimpl_->socket->close();
+//   pimpl_->socket->deleteLater();
+//   deleteLater();
 }

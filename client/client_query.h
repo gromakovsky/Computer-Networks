@@ -5,25 +5,28 @@
 #include <QObject>
 #include <QAbstractSocket>
 
-struct response_t;
-struct request_t;
+class QTcpSocket;
 
-struct client_t : QObject
+struct request_t;
+struct response_t;
+
+struct client_query_t : QObject
 {
    Q_OBJECT
 
 public:
-   client_t();
-   ~client_t();
-
-   void process_request(request_t const &);
+   client_query_t(QObject * parent, QTcpSocket * socket, request_t const & request);
+   ~client_query_t();
 
 signals:
    void response_arrived(response_t const & response);
    void error_occured(QString const & description);
 
 private slots:
-   void handle_error(QAbstractSocket::SocketError);
+   void data_read(QByteArray const &);
+   void display_error(QAbstractSocket::SocketError err);
+
+   void finish();
 
 private:
    struct implementation_t;

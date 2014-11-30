@@ -38,7 +38,7 @@ struct writer_t::implementation_t
 writer_t::writer_t(QTcpSocket * socket)
    : pimpl_(new implementation_t(socket))
 {
-   connect(pimpl_->socket, SIGNAL(bytesWritten(qint64)), SLOT(write));
+   connect(pimpl_->socket, SIGNAL(bytesWritten(qint64)), SLOT(write()));
 }
 
 writer_t::~writer_t()
