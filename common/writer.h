@@ -20,6 +20,7 @@ public:
 
 signals:
    void finished();
+   void error_occured(QString const & description);
 
 private slots:
    void write();

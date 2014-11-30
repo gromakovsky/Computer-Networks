@@ -1,5 +1,7 @@
 #include "writer.h"
 
+#include <functional>
+
 #include <QByteArray>
 #include <QTcpSocket>
 
@@ -10,9 +12,13 @@ struct writer_t::implementation_t
 
    bool all_data_consumed;
 
-   implementation_t(QTcpSocket * socket)
+   typedef std::function<void(QString const &)> error_callback_t;
+   error_callback_t error_callback;
+
+   implementation_t(QTcpSocket * socket, error_callback_t const & error_callback)
       : socket(socket)
       , all_data_consumed(false)
+      , error_callback(error_callback)
    {
    }
 
@@ -27,8 +33,7 @@ struct writer_t::implementation_t
       auto res = socket->write(data);
       if (res == -1)
       {
-         // TODO
-         qDebug() << "Write error occured :(";
+         error_callback(socket->errorString());
          return;
       }
       data.remove(0, res);
@@ -36,7 +41,7 @@ struct writer_t::implementation_t
 };
 
 writer_t::writer_t(QTcpSocket * socket)
-   : pimpl_(new implementation_t(socket))
+   : pimpl_(new implementation_t(socket, [this](QString const & e){emit error_occured(e);}))
 {
    connect(pimpl_->socket, SIGNAL(bytesWritten(qint64)), SLOT(write()));
 }
