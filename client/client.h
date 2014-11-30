@@ -23,7 +23,7 @@ signals:
    void error_occured(QString const & description);
 
 private slots:
-   void handle_error(QAbstractSocket::SocketError);
+   void query_finished();
 
 private:
    struct implementation_t;

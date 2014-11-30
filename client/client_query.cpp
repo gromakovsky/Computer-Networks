@@ -68,7 +68,6 @@ struct client_query_t::implementation_t
                offset += (filename.size() + 1);
                files_info.emplace_back(human_readable_md5(md5), std::move(filename));
             }
-            qDebug() << "Received LIST response";
             response_t response;
             response.type = response_t::RT_LIST;
             response.data = files_info;
@@ -150,5 +149,6 @@ void client_query_t::finish()
 {
    pimpl_->socket->close();
    pimpl_->socket->deleteLater();
+   emit finished();
    deleteLater();
 }

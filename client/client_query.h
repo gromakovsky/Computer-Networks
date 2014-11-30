@@ -22,6 +22,8 @@ signals:
    void response_arrived(response_t const & response);
    void error_occured(QString const & description);
 
+   void finished();
+
 private slots:
    void data_read(QByteArray const &);
    void display_error(QAbstractSocket::SocketError err);

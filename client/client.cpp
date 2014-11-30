@@ -12,6 +12,12 @@
 
 struct client_t::implementation_t
 {
+   size_t queries_count;
+
+   implementation_t()
+      : queries_count(0)
+   {
+   }
 };
 
 client_t::client_t()
@@ -25,6 +31,13 @@ client_t::~client_t()
 
 void client_t::process_request(request_t const & request)
 {
+   static const size_t connections_limit = 1;
+   if (pimpl_->queries_count >= connections_limit)
+   {
+      emit error_occured("Too many connections");
+      return;
+   }
+
    std::unique_ptr<QTcpSocket> socket(new QTcpSocket);
    socket->connectToHost(request.host, default_port());
    if (!socket->waitForConnected())
@@ -34,23 +47,14 @@ void client_t::process_request(request_t const & request)
    }
    assert(socket->state() == QAbstractSocket::ConnectedState);
    auto query = new client_query_t(this, socket.release(), request);
+   ++pimpl_->queries_count;
    connect(query, SIGNAL(response_arrived(response_t const &)), SIGNAL(response_arrived(response_t const &)));
    connect(query, SIGNAL(error_occured(QString const &)), SIGNAL(error_occured(QString const &)));
+   connect(query, SIGNAL(finished()), SLOT(query_finished()));
 }
 
-void client_t::handle_error(QAbstractSocket::SocketError err)
+void client_t::query_finished()
 {
-//   switch (err)
-//   {
-//      case QAbstractSocket::RemoteHostClosedError:
-//         break;
-//      case QAbstractSocket::HostNotFoundError:
-//         pimpl_->message_handler->handle_error("The host was not found. Please check the host name and port settings.");
-//         break;
-//      case QAbstractSocket::ConnectionRefusedError:
-//         pimpl_->message_handler->handle_error("The connection was refused by the peer.");
-//         break;
-//      default:
-//         pimpl_->message_handler->handle_error("The following error occurred: " + pimpl_->socket.errorString());
-//   }
+   assert(pimpl_->queries_count);
+   --pimpl_->queries_count;
 }
