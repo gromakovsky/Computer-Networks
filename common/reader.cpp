@@ -7,14 +7,19 @@ struct reader_t::implementation_t
 {
    QTcpSocket * socket;
    QByteArray data;
+   bool stopped;
 
    implementation_t(QTcpSocket * socket)
       : socket(socket)
+      , stopped(false)
    {
    }
 
    void read()
    {
+      if (stopped)
+         return;
+
       auto size = socket->bytesAvailable();
       data.resize(size);
       socket->read(data.data(), size);
@@ -30,6 +35,12 @@ reader_t::reader_t(QTcpSocket * socket)
 
 reader_t::~reader_t()
 {
+}
+
+void reader_t::stop()
+{
+   pimpl_->stopped = true;
+   emit finished();
 }
 
 void reader_t::read()

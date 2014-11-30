@@ -73,6 +73,7 @@ struct client_query_t::implementation_t
             response.type = response_t::RT_LIST;
             response.data = files_info;
             response_handler(response);
+            reader.stop();
             break;
          }
          case MT_GET_RESPONSE:
@@ -93,6 +94,7 @@ struct client_query_t::implementation_t
             response.type = response_t::RT_GET;
             response.data = std::make_pair(human_readable_md5(hash), std::move(file_data));
             response_handler(response);
+            reader.stop();
             break;
          }
          case MT_ERROR:
@@ -101,6 +103,7 @@ struct client_query_t::implementation_t
             response.type = response_t::RT_ERROR;
             response.data = static_cast<error_type>(buffer.at(1));
             response_handler(response);
+            reader.stop();
             break;
          }
          default:
@@ -123,7 +126,7 @@ client_query_t::client_query_t(QObject * parent, QTcpSocket * socket, request_t 
    connect(pimpl_->socket, SIGNAL(error(QAbstractSocket::SocketError)),
            SLOT(display_error(QAbstractSocket::SocketError)));
 
-   connect(&pimpl_->writer, SIGNAL(finished()), SLOT(finish()));
+   connect(&pimpl_->reader, SIGNAL(finished()), SLOT(finish()));
 
    pimpl_->writer.consume(construct_message(request));
    pimpl_->writer.finish();
@@ -145,7 +148,7 @@ void client_query_t::display_error(QAbstractSocket::SocketError err)
 
 void client_query_t::finish()
 {
-//   pimpl_->socket->close();
-//   pimpl_->socket->deleteLater();
-//   deleteLater();
+   pimpl_->socket->close();
+   pimpl_->socket->deleteLater();
+   deleteLater();
 }

@@ -24,11 +24,14 @@ struct server_query_t::implementation_t
    reader_t reader;
    writer_t writer;
 
+   bool finished;
+
    implementation_t(QTcpSocket * socket, fs::path const & path)
       : socket(socket)
       , path(path)
       , reader(socket)
       , writer(socket)
+      , finished(false)
    {
    }
 
@@ -122,11 +125,16 @@ void server_query_t::data_read(QByteArray const & data)
 
 void server_query_t::display_error(QAbstractSocket::SocketError err)
 {
+   // It's OK if client has closed connection after reading all the data
+   if (pimpl_->finished && err == QAbstractSocket::RemoteHostClosedError)
+      return;
+
    emit error_occured(pimpl_->get_error_description(err));
 }
 
 void server_query_t::finish()
 {
+   pimpl_->finished = true;
 //   pimpl_->socket->close();
 //   pimpl_->socket->deleteLater();
 //   deleteLater();

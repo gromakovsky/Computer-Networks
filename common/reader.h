@@ -17,6 +17,10 @@ public:
 
 signals:
    void data_read(QByteArray const & data);
+   void finished();
+
+public slots:
+   void stop();
 
 private slots:
    void read();
