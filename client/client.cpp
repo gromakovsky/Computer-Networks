@@ -27,9 +27,11 @@ void client_t::process_request(request_t const & request)
 {
    std::unique_ptr<QTcpSocket> socket(new QTcpSocket);
    socket->connectToHost(request.host, default_port());
-   qDebug() << "Waiting for connected";
-   socket->waitForConnected();
-   qDebug() << "Connected";
+   if (!socket->waitForConnected())
+   {
+      emit error_occured("Could not connect:\n" + socket->errorString());
+      return;
+   }
    assert(socket->state() == QAbstractSocket::ConnectedState);
    auto query = new client_query_t(this, socket.release(), request);
    connect(query, SIGNAL(response_arrived(response_t const &)), SIGNAL(response_arrived(response_t const &)));
