@@ -17,14 +17,14 @@ SOURCES += main.cpp \
     announcer.cpp \
     common/main_window.cpp \
     server/filesystem_server.cpp \
-    server/query.cpp \
     common/md5.cpp \
     common/writer.cpp \
     common/reader.cpp \
     client/request_message_constructor.cpp \
     client/client.cpp \
     client/client_query.cpp \
-    server/response_message_constructor.cpp
+    server/response_message_constructor.cpp \
+    server/server_query.cpp
 
 include(deployment.pri)
 qtcAddDeployment()
@@ -36,7 +36,6 @@ HEADERS += \
     common/host.h \
     common/response.h \
     server/filesystem_server.h \
-    server/query.h \
     client/client.h \
     common/md5.h \
     common/writer.h \
@@ -44,4 +43,5 @@ HEADERS += \
     common/request.h \
     client/request_message_constructor.h \
     client/client_query.h \
-    server/response_message_constructor.h
+    server/response_message_constructor.h \
+    server/server_query.h

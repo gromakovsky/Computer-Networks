@@ -1,7 +1,7 @@
 #include "common/common.h"
 #include "filesystem_server.h"
 #include "common/main_window.h"
-#include "query.h"
+#include "server_query.h"
 
 #include <cassert>
 #include <iostream>
@@ -40,6 +40,6 @@ filesystem_server_t::~filesystem_server_t()
 void filesystem_server_t::accept_connection()
 {
    assert(pimpl_->server.hasPendingConnections());
-   auto query = new query_t(this, pimpl_->server.nextPendingConnection(), pimpl_->path);
+   auto query = new server_query_t(this, pimpl_->server.nextPendingConnection(), pimpl_->path);
    connect(query, SIGNAL(error_occured(QString const &)), SIGNAL(error_occured(QString const &)));
 }

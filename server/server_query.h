@@ -10,13 +10,13 @@
 class QTcpSocket;
 struct main_window_t;
 
-struct query_t : QObject
+struct server_query_t : QObject
 {
    Q_OBJECT
 
 public:
-   query_t(QObject * parent, QTcpSocket * socket, boost::filesystem::path const &);
-   ~query_t();
+   server_query_t(QObject * parent, QTcpSocket * socket, boost::filesystem::path const &);
+   ~server_query_t();
 
 signals:
    void error_occured(QString const & description);

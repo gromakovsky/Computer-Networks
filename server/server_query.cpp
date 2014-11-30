@@ -1,4 +1,4 @@
-#include "query.h"
+#include "server_query.h"
 #include "response_message_constructor.h"
 #include "common/common.h"
 #include "common/main_window.h"
@@ -15,7 +15,7 @@
 
 namespace fs = boost::filesystem;
 
-struct query_t::implementation_t
+struct server_query_t::implementation_t
 {
    QTcpSocket * socket;
    fs::path const path;
@@ -99,7 +99,7 @@ struct query_t::implementation_t
    }
 };
 
-query_t::query_t(QObject * parent, QTcpSocket * socket, fs::path const & path)
+server_query_t::server_query_t(QObject * parent, QTcpSocket * socket, fs::path const & path)
    : QObject(parent)
    , pimpl_(new implementation_t(socket, path))
 {
@@ -111,21 +111,21 @@ query_t::query_t(QObject * parent, QTcpSocket * socket, fs::path const & path)
    connect(&pimpl_->writer, SIGNAL(finished()), SLOT(finish()));
 }
 
-query_t::~query_t()
+server_query_t::~server_query_t()
 {
 }
 
-void query_t::data_read(QByteArray const & data)
+void server_query_t::data_read(QByteArray const & data)
 {
    pimpl_->data_read(data);
 }
 
-void query_t::display_error(QAbstractSocket::SocketError err)
+void server_query_t::display_error(QAbstractSocket::SocketError err)
 {
    emit error_occured(pimpl_->get_error_description(err));
 }
 
-void query_t::finish()
+void server_query_t::finish()
 {
 //   pimpl_->socket->close();
 //   pimpl_->socket->deleteLater();
