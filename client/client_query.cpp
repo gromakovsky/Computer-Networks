@@ -127,6 +127,7 @@ client_query_t::client_query_t(QObject * parent, QTcpSocket * socket, request_t 
 
    connect(&pimpl_->reader, SIGNAL(finished()), SLOT(finish()));
 
+   connect(&pimpl_->writer, SIGNAL(error_occured(QString const &)), SIGNAL(error_occured(QString const &)));
    pimpl_->writer.consume(construct_message(request));
    pimpl_->writer.finish();
 }

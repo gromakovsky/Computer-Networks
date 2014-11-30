@@ -108,6 +108,7 @@ server_query_t::server_query_t(QObject * parent, QTcpSocket * socket, fs::path c
    connect(pimpl_->socket, SIGNAL(error(QAbstractSocket::SocketError)),
            SLOT(display_error(QAbstractSocket::SocketError)));
 
+   connect(&pimpl_->writer, SIGNAL(error_occured(QString const &)), SIGNAL(error_occured(QString const &)));
    connect(&pimpl_->writer, SIGNAL(finished()), SLOT(finish()));
 }
 
