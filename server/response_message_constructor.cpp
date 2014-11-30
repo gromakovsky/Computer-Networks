@@ -48,7 +48,7 @@ QByteArray construct_get_response(fs::path const & path)
    std::uint32_t size = raw_file.size();
    res.append(int_to_bytes(size));
    res.append(md5(raw_file));
-   res.append(raw_file.data(), raw_file.size());
+   res.append(raw_file.data(), size);
 
    return res;
 }

@@ -11,7 +11,8 @@ namespace
    QByteArray my_ip()
    {
       QHostAddress addr;
-      for (auto const & address : QNetworkInterface::allAddresses()) {
+      for (auto const & address : QNetworkInterface::allAddresses())
+      {
          if (address.protocol() == QAbstractSocket::IPv4Protocol && address != QHostAddress(QHostAddress::LocalHost))
          {
             addr = address;

@@ -31,7 +31,7 @@ client_t::~client_t()
 
 void client_t::process_request(request_t const & request)
 {
-   static const size_t connections_limit = 1;
+   static const size_t connections_limit = 32;
    if (pimpl_->queries_count >= connections_limit)
    {
       emit error_occured("Too many connections");
