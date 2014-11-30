@@ -4,6 +4,7 @@
 #include <algorithm>
 
 #include <boost/filesystem/fstream.hpp>
+#include <boost/filesystem/operations.hpp>
 
 namespace fs = boost::filesystem;
 
@@ -32,7 +33,13 @@ QByteArray construct_list_response(fs::path const & path)
 
 QByteArray construct_get_response(fs::path const & path)
 {
+   if (!fs::exists(path))
+      return construct_error_response(ET_FILE_NOT_FOUND);
+
    fs::ifstream in(path, std::ios_base::binary);
+   if (!in)
+      return construct_error_response(ET_INTERNAL_ERROR);
+
    std::string raw_file;
    std::copy(std::istream_iterator<char>(in), std::istream_iterator<char>(), std::back_inserter(raw_file));
 
