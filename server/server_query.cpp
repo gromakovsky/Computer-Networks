@@ -71,6 +71,7 @@ struct server_query_t::implementation_t
                   std::string filename(std::next(buffer.data()), idx - 1);
                   fs::ofstream out(path / filename, std::ios_base::binary);
                   boost::copy(buffer.mid(data_start_idx, size), std::ostream_iterator<char>(out));
+                  finished = true;
                }
             }
             break;
@@ -80,21 +81,8 @@ struct server_query_t::implementation_t
       }
    }
 
-   QString get_error_description(QAbstractSocket::SocketError err)
+   QString get_error_description(QAbstractSocket::SocketError)
    {
-//      switch (err)
-//      {
-//         case QAbstractSocket::RemoteHostClosedError:
-//            break;
-//         case QAbstractSocket::HostNotFoundError:
-//            main_window->handle_error("The host was not found. Please check the host name and port settings.");
-//            break;
-//         case QAbstractSocket::ConnectionRefusedError:
-//            main_window->handle_error("The connection was refused by the peer.");
-//            break;
-//         default:
-//            main_window->handle_error("The following error occurred: " + socket->errorString());
-//      }
       return socket->errorString();
    }
 };
@@ -107,6 +95,7 @@ server_query_t::server_query_t(QObject * parent, QTcpSocket * socket, fs::path c
    connect(&pimpl_->reader, SIGNAL(data_read(QByteArray const &)), SLOT(data_read(QByteArray const &)));
    connect(pimpl_->socket, SIGNAL(error(QAbstractSocket::SocketError)),
            SLOT(display_error(QAbstractSocket::SocketError)));
+   connect(pimpl_->socket, SIGNAL(disconnected()), SLOT(disconnected()));
 
    connect(&pimpl_->writer, SIGNAL(error_occured(QString const &)), SIGNAL(error_occured(QString const &)));
    connect(&pimpl_->writer, SIGNAL(finished()), SLOT(finish()));
@@ -130,10 +119,15 @@ void server_query_t::display_error(QAbstractSocket::SocketError err)
    emit error_occured(pimpl_->get_error_description(err));
 }
 
+void server_query_t::disconnected()
+{
+   assert(pimpl_->finished);
+   pimpl_->socket->close();
+   pimpl_->socket->deleteLater();
+   deleteLater();
+}
+
 void server_query_t::finish()
 {
    pimpl_->finished = true;
-//   pimpl_->socket->close();
-//   pimpl_->socket->deleteLater();
-//   deleteLater();
 }

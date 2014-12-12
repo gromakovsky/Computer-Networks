@@ -25,6 +25,7 @@ private slots:
    void data_read(QByteArray const &);
    void display_error(QAbstractSocket::SocketError err);
 
+   void disconnected();
    void finish();
 
 private:
