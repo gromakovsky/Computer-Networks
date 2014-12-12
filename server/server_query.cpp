@@ -38,6 +38,12 @@ struct server_query_t::implementation_t
    void data_read(QByteArray const & data)
    {
       buffer.append(data);
+      if (buffer.at(0) > MT_PUT)
+      {
+         writer.consume(construct_error_response(ET_MALFORMED_MESSAGE));
+         writer.finish();
+         return;
+      }
       auto message_type = static_cast<message_type_t>(buffer.at(0));
       switch (message_type)
       {
