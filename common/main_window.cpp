@@ -18,6 +18,9 @@
 
 #include <boost/format.hpp>
 #include <boost/variant/static_visitor.hpp>
+#include <boost/filesystem/fstream.hpp>
+
+namespace fs = boost::filesystem;
 
 struct response_visitor_t : boost::static_visitor<QString>
 {
@@ -259,6 +262,19 @@ void main_window_t::send_query()
       request.type = request_t::RT_PUT;
       request.host = host;
       request.data = std::make_pair(filename.toStdString(), data.toStdString());
+      pimpl_->client.process_request(request);
+   }
+   else if (type == "PUT (from file)")
+   {
+      request_t request;
+      request.type = request_t::RT_PUT;
+      request.host = host;
+      fs::path path(data.toStdString());
+      std::string file_data;
+      fs::ifstream is(path, std::ios_base::binary);
+      std::copy(std::istreambuf_iterator<char>(is), std::istreambuf_iterator<char>(), std::back_inserter(file_data));
+
+      request.data = std::make_pair(filename.toStdString(), file_data);
       pimpl_->client.process_request(request);
    }
 }
