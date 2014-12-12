@@ -23,7 +23,7 @@ signals:
    void error_occured(QString const & description);
 
 private slots:
-   void write();
+   void write_again(qint64);
 
 private:
    struct implementation_t;
