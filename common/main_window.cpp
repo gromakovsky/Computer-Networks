@@ -43,7 +43,34 @@ struct response_visitor_t : boost::static_visitor<QString>
 
    QString operator()(response_t::error_response_data_t const & err) const
    {
-      return QString::fromStdString("Error");
+      QString result("Error detected by host: ");
+      switch (err)
+      {
+         case (ET_FILE_NOT_FOUND):
+         {
+            result += "file not found.";
+            break;
+         }
+         case (ET_MALFORMED_MESSAGE):
+         {
+            result += "malformed message.";
+            break;
+         }
+         case (ET_TOO_MANY_CONNECTIONS):
+         {
+            result += "too many connections.";
+            break;
+         }
+         case (ET_INTERNAL_ERROR):
+         {
+            result += "internal server error.";
+            break;
+         }
+         default:
+            assert(false);
+      }
+
+      return result;
    }
 };
 
