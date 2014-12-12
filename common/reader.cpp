@@ -9,6 +9,9 @@ struct reader_t::implementation_t
    QByteArray data;
    bool stopped;
 
+   typedef std::function<void(QString const &)> error_callback_t;
+   error_callback_t error_callback;
+
    implementation_t(QTcpSocket * socket)
       : socket(socket)
       , stopped(false)
@@ -22,7 +25,11 @@ struct reader_t::implementation_t
 
       auto size = socket->bytesAvailable();
       data.resize(size);
-      socket->read(data.data(), size);
+      auto res = socket->read(data.data(), size);
+      if (res == -1)
+      {
+         error_callback(socket->errorString());
+      }
    }
 
 };
