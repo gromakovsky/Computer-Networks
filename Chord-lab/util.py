@@ -1,8 +1,12 @@
 import ipaddress
 import hashlib
 import struct
+import socket
 
 import protocol
+
+
+TCP_BUFFER_SIZE = 2**15
 
 
 def readable_ip(ip_bytes):
@@ -17,8 +21,52 @@ def my_hash(s):
     return struct.unpack('>I', hash_bytes)[0]
 
 
+def pack_hash(hash_int):
+    return struct.pack('>I', hash_int)
+
+
 def in_range(val, lo, hi):
     if lo > hi:
-        return not (hi <= val <= lo)
+        return not (hi < val < lo)
     else:
         return lo <= val <= hi
+
+
+def read_msg(sock, length, already_read):
+    total_read = len(already_read)
+    chunks = [already_read]
+    while total_read < length:
+        chunk = sock.recv(TCP_BUFFER_SIZE)
+        if not chunk:
+            return ''
+        chunks.append(chunk)
+        total_read += len(chunk)
+
+    return b''.join(chunks)
+
+
+def send_all(sock, msg):
+    to_send = len(msg)
+    total_sent = 0
+    while total_sent < to_send:
+        sent = sock.send(msg[total_sent:])
+        if sent == 0:
+            raise RuntimeError('Socket connection was unexpectedly broken')
+        total_sent += sent
+
+
+class MySocket(object):
+    def __init__(self):
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock.settimeout(10)
+
+    def connect(self, host, port):
+        self.sock.connect((host, port))
+
+    def send(self, msg):
+        send_all(self.sock, msg)
+
+    def close(self):
+        self.sock.close()
+
+
