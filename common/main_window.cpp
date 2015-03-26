@@ -19,6 +19,7 @@
 #include <boost/format.hpp>
 #include <boost/variant/static_visitor.hpp>
 #include <boost/filesystem/fstream.hpp>
+#include <boost/range/algorithm/copy.hpp>
 
 namespace fs = boost::filesystem;
 
@@ -26,7 +27,7 @@ struct response_visitor_t : boost::static_visitor<QString>
 {
    QString operator()(response_t::list_response_data_t const & files_info) const
    {
-      std::string msg = "Last response (to `LIST' query):\n";
+      std::string msg = "Response to 'LIST' query:\n";
       for (auto const & pair : files_info)
       {
          msg += pair.second + " (md5 = " + pair.first + ")\n";
@@ -37,10 +38,12 @@ struct response_visitor_t : boost::static_visitor<QString>
 
    QString operator()(response_t::get_response_data_t const & fileinfo) const
    {
-      auto msg = boost::format("Last response (to 'GET' query):\nSize = %1%, md5 = %2%, data:\n%3%")
+      fs::ofstream out("get_response");
+      auto msg = boost::format("Received response to 'GET' query:\nSize = %1%, md5 = %2%, data is in file %3%")
             % fileinfo.second.size()
             % fileinfo.first
-            % fileinfo.second;
+            % "get_response";
+      boost::copy(fileinfo.second, std::ostreambuf_iterator<char>(out));
       return QString::fromStdString(str(msg));
    }
 
@@ -226,7 +229,7 @@ void main_window_t::add_host(host_t host)
 void main_window_t::handle_response(response_t const & response)
 {
    auto msg = boost::apply_visitor(response_visitor_t(), response.data);
-   pimpl_->response_label.setText(msg);
+   pimpl_->response_label.setText(pimpl_->response_label.text() + "\n" + msg);
 }
 
 void main_window_t::handle_error(QString const & description)
@@ -263,8 +266,9 @@ void main_window_t::send_query()
       request.host = host;
       request.data = std::make_pair(filename.toStdString(), data.toStdString());
       pimpl_->client.process_request(request);
+      qDebug() << "Sent file";
    }
-   else if (type == "PUT (from file)")
+   else if (type == "FILE_PUT")
    {
       request_t request;
       request.type = request_t::RT_PUT;
@@ -276,5 +280,6 @@ void main_window_t::send_query()
 
       request.data = std::make_pair(filename.toStdString(), file_data);
       pimpl_->client.process_request(request);
+      qDebug() << "Sent file";
    }
 }

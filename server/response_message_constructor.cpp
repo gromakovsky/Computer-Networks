@@ -19,7 +19,7 @@ QByteArray construct_list_response(fs::path const & path)
    {
       fs::ifstream in(it->path(), std::ios_base::binary);
       std::string raw_file;
-      std::copy(std::istream_iterator<char>(in), std::istream_iterator<char>(), std::back_inserter(raw_file));
+      std::copy(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>(), std::back_inserter(raw_file));
       auto hash = md5(raw_file);
       res.append(hash);
       auto filename = it->path().filename().string();
@@ -41,11 +41,11 @@ QByteArray construct_get_response(fs::path const & path)
       return construct_error_response(ET_INTERNAL_ERROR);
 
    std::string raw_file;
-   std::copy(std::istream_iterator<char>(in), std::istream_iterator<char>(), std::back_inserter(raw_file));
+   std::copy(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>(), std::back_inserter(raw_file));
 
    QByteArray res;
    res.push_back(static_cast<unsigned char>(MT_GET_RESPONSE));
-   std::uint32_t size = raw_file.size();
+   std::uint64_t size = raw_file.size();
    res.append(int_to_bytes(size));
    res.append(md5(raw_file));
    res.append(raw_file.data(), size);

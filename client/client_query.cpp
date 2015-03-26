@@ -80,9 +80,9 @@ struct client_query_t::implementation_t
             if (buffer.size() < 5)
                return;
 
-            QByteArray size(buffer.data() + 1, 4);
+            QByteArray size(buffer.data() + 1, 8);
             size_t file_size = bytes_to_int(size);
-            auto start = buffer.data() + 5;
+            auto start = buffer.data() + 9;
             if (5 + 16 + file_size > static_cast<size_t>(buffer.size()))
                return;
 
