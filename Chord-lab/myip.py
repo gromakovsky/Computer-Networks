@@ -6,9 +6,8 @@ import struct
 
 if os.name != "nt":
     import fcntl
-    import struct
 
-    def get_interface_ip(ifname):
+    def _get_interface_ip(ifname):
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         return socket.inet_ntoa(fcntl.ioctl(s.fileno(), 0x8915, struct.pack('256s',
                                 ifname[:15]))[20:24])
@@ -30,12 +29,12 @@ def get_readable_ip():
             ]
         for ifname in interfaces:
             try:
-                ip = get_interface_ip(ifname)
+                ip = _get_interface_ip(ifname)
                 break
             except IOError:
                 pass
     return ip
 
 
-def my_binary_ip():
+def get_ip_bytes():
     return struct.pack('>I', int(ipaddress.IPv4Address(get_readable_ip())))

@@ -2,9 +2,12 @@ import struct
 
 
 port = 7777
+hash_size_bits = 32
+modulo = 2**hash_size_bits
 
 message_codes = {
-    'init': 0x7,
+    'INIT': 0x7,
+    'PICK_UP': 0x8,
 }
 
 

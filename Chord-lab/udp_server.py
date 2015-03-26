@@ -24,13 +24,13 @@ class UPDServer(threading.Thread):
             if self.stopped:
                 break
             data, address = self.socket.recvfrom(BUFFER_SIZE)
-            if data[0] == protocol.message_codes['init']:
-                log_action("Received `init' message from", address)
-                binary_ip = data[1:]
-                if len(binary_ip) != 4:
-                    log_action("`init' message from", address, 'is malformed')
+            if data[0] == protocol.message_codes['INIT']:
+                log_action("Received `INIT' message from", address)
+                ip_bytes = data[1:]
+                if len(ip_bytes) != 4:
+                    log_action("`INIT' message from", address, 'is malformed')
                 else:
-                    self.node.process_init(binary_ip)
+                    self.node.process_init(ip_bytes)
             else:
                 log_action("Received malformed message from", address)
 
