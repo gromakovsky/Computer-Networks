@@ -185,7 +185,7 @@ def get_backup(address_bytes):
             raw_backup = util.read_length_then_msg(sock, 4, chunk[1:])
             if len(raw_backup) % 8 != 0:
                 raise RuntimeError("Received malformed message in response to `GET_BACKUP'. Size must be multiple of 8")
-            backup = {}
+            backup = dict()
             for i in range(raw_backup / 8):
                 key = util.unpack_hash(raw_backup[i * 8:i * 8 + 4])
                 value = raw_backup[i * 8 + 4:i * 8 + 8]
