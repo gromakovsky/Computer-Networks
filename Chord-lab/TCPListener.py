@@ -34,7 +34,7 @@ class ConnectionHandler(threading.Thread):
             if not chunk:
                 log_action('Connection from', self.address, 'unexpectedly closed', severity='ERROR')
             elif chunk[0] in code_to_handler:
-                code_to_handler[[chunk[0]]](chunk)
+                code_to_handler[chunk[0]](chunk)
             elif chunk[0] in protocol.message_codes:
                 log_action('Received message from', self.address, 'with unexpected code:', hex(chunk[0]),
                            severity='ERROR')
