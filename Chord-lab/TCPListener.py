@@ -161,7 +161,11 @@ class Listener(threading.Thread):
     def run(self):
         log_action('Listening on TCP port', protocol.port, severity='INFO')
         while True:
-            client_socket, address = self.socket.accept()
+            try:
+                client_socket, address = self.socket.accept()
+            except OSError as e:
+                log_action('Error occurred in TCP Listener:', e, severity='ERROR')
+                continue
             log_action('TCP Listener received a connection from', address)
             connection_processor = ConnectionHandler(client_socket, address, self.node)
             connection_processor.start()
