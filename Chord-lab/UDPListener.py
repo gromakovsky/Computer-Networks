@@ -14,6 +14,7 @@ class Listener(threading.Thread):
         threading.Thread.__init__(self, name='UDP Listener', daemon=True)
         self.node = node
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.socket.settimeout(10)
         self.socket.bind(('', protocol.port))
 

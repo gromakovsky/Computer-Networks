@@ -98,6 +98,7 @@ def send_all(sock, msg):
 class MySocket(object):
     def __init__(self):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.sock.settimeout(10)
 
     def connect(self, host, port):
