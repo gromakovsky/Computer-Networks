@@ -47,18 +47,30 @@ class ConnectionHandler(threading.Thread):
     def log_message_receiving(self, msg_type):
         log_action("Received `{}' message from".format(msg_type), self.address)
 
+    def send_all(self, msg):
+        util.send_all(self.socket, msg)
+
+    def reply_ok(self):
+        self.send_all(protocol.message_code('OK_RESPONSE'))
+
+    def reply_collision(self):
+        self.send_all(protocol.message_code('COLLISION'))
+
+    def reply_error(self):
+        self.send_all(protocol.message_code('ERROR'))
+
     def handle_find_successor(self, chunk):
         self.log_message_receiving('FIND_SUCCESSOR')
         ip_bytes = util.read_msg(self.socket, 4, chunk[1:])
         res = self.node.find_successor(util.my_hash(ip_bytes))
         msg = protocol.message_code('OK_RESPONSE') + res if res else protocol.message_code('ERROR')
-        util.send_all(self.socket, msg)
+        self.send_all(msg)
 
     def handle_get_predecessor(self, chunk):
         self.log_message_receiving('GET_PREDECESSOR')
         res = self.node.predecessor
         msg = protocol.message_code('OK_RESPONSE') + res if res else protocol.message_code('ERROR')
-        util.send_all(self.socket, msg)
+        self.send_all(msg)
 
     def handle_notify(self, chunk):
         self.log_message_receiving('NOTIFY')
@@ -67,15 +79,31 @@ class ConnectionHandler(threading.Thread):
 
     def handle_add_entry(self, chunk):
         self.log_message_receiving('ADD_ENTRY')
-        # TODO
+        rest = util.read_msg(self.socket, 8, chunk[1:])
+        key_hash = util.unpack_hash(rest[:4])
+        ip_bytes = rest[4:]
+        if key_hash in self.node.addresses:
+            self.reply_collision()
+        elif self.node.add_to_addresses(key_hash, ip_bytes):
+            self.reply_ok()
+        else:
+            self.reply_error()
 
     def handle_get_ip(self, chunk):
         self.log_message_receiving('GET_IP')
-        # TODO
+        key_hash = util.read_msg(self.socket, 4, chunk[1:])
+        res = self.node.addresses.get(key_hash)
+        msg = protocol.message_code('OK_RESPONSE') + res if res is not None else protocol.message_code('ERROR')
+        self.send_all(msg)
 
     def handle_get_data(self, chunk):
         self.log_message_receiving('GET_DATA')
-        # TODO
+        key_hash = util.read_msg(self.socket, 4, chunk[1:])
+        res = self.node.storage.get(key_hash)
+        good = res is not None
+        code = protocol.message_code('OK_RESPONSE') if good else protocol.message_code('ERROR')
+        msg = code + (util.pack_length(len(res)) + res if good else b'')
+        self.send_all(msg)
 
     def handle_pick_up(self, chunk):
         self.log_message_receiving('PICK_UP')
@@ -89,19 +117,32 @@ class ConnectionHandler(threading.Thread):
 
     def handle_get_backup(self, chunk):
         self.log_message_receiving('GET_BACKUP')
-        # TODO
+        raw_backup_items = [util.pack_hash(k) + v for k, v in self.node.backup.items()]
+        msg = protocol.message_code('OK_RESPONSE') + b''.join(raw_backup_items)
+        self.send_all(msg)
 
     def handle_add_to_backup(self, chunk):
         self.log_message_receiving('ADD_TO_BACKUP')
-        # TODO
+        rest = util.read_msg(self.socket, 8, chunk[1:])
+        key_hash = util.unpack_hash(rest[:4])
+        ip_bytes = rest[4:]
+        if self.node.add_to_backup(key_hash, ip_bytes):
+            self.reply_ok()
+        else:
+            self.reply_error()
 
     def handle_delete_entry(self, chunk):
         self.log_message_receiving('DELETE_ENTRY')
-        # TODO
+        key_hash = util.read_msg(self.socket, 4, chunk[1:])
+        self.node.delete_entry(key_hash)
 
     def handle_delete_from_backup(self, chunk):
         self.log_message_receiving('DELETE_FROM_BACKUP')
-        # TODO
+        key_hash = util.read_msg(self.socket, 4, chunk[1:])
+        if self.node.delete_entry(key_hash):
+            self.reply_ok()
+        else:
+            self.reply_error()
 
 
 class Listener(threading.Thread):

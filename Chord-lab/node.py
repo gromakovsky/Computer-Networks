@@ -152,7 +152,7 @@ class Node(object):
 
     def deploy_and_update_backup(self, ip_bytes):
         for key, value in self.backup.items():
-            while not communication.send_add_to_backup(self.fingers[0], key, value):
+            while not communication.add_to_backup(self.fingers[0], key, value):
                 pass
             self.addresses[key] = value
         self.update_predecessor(ip_bytes)
@@ -181,6 +181,38 @@ class Node(object):
                 data = communication.get_data(data_address, key_hash)
                 return data
             except Exception as e:
-                log_action("Failed to get data: ", e, severity='ERROR')
+                log_action("Attempt to get data failed with the following reason: ", e, severity='ERROR')
 
         return None
+
+    def add_to_addresses(self, key_hash, ip_bytes):
+        if not util.in_range(key_hash, util.my_hash(self.predecessor), util.dec(self.ip_hash)):
+            return False
+
+        return communication.add_to_backup(self.fingers[0], key_hash, ip_bytes)
+
+    def add_to_backup(self, key_hash, ip_bytes):
+        if key_hash in self.addresses:
+            return False
+
+        self.lock.acquire()
+        self.backup[key_hash] = ip_bytes
+        self.lock.release()
+
+    def delete_entry(self, key_hash):
+        if key_hash in self.addresses:
+            self.lock.acquire()
+            del self.addresses[key_hash]
+            self.lock.release()
+            return True
+
+        return False
+
+    def delete_from_backup(self, key_hash):
+        if key_hash in self.backup:
+            self.lock.acquire()
+            del self.backup[key_hash]
+            self.lock.release()
+            return True
+
+        return False

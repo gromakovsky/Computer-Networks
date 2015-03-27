@@ -202,7 +202,7 @@ def get_backup(address_bytes):
     return send_and_receive_tcp(address_bytes, msg, on_receive, expected_codes, 'GET_BACKUP')
 
 
-def send_add_to_backup(address_bytes, key_hash, value_ip_bytes):
+def add_to_backup(address_bytes, key_hash, value_ip_bytes):
     def on_receive(sock, chunk):
         if chunk[0] == protocol.message_codes['OK_RESPONSE']:
             return True
