@@ -25,6 +25,7 @@ def main():
             pass
     except KeyboardInterrupt:
         tcp_listener.socket.close()
+        print('Aborting on keyboard interrupt')
         sys.exit(0)
 
 

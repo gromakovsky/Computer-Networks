@@ -135,17 +135,17 @@ class Node(object):
     def share_table(self, old_predecessor):
         for key, value in self.addresses.items():
             if util.in_range(key, util.my_hash(old_predecessor), util.dec(util.my_hash(self.predecessor))):
-                try:
-                    communication.send_add_entry(self.predecessor, key, value)
-                except Exception as e:
-                    log_action("Error occurred in sending `ADD_ENTRY':", e, 'ERROR')
+                communication.add_entry(self.predecessor, key, value)
 
     def clean_table(self, old_predecessor):
         to_remove = set()
         for key, value in self.addresses.items():
             if util.in_range(key, util.my_hash(old_predecessor), util.dec(util.my_hash(self.predecessor))):
+                attempt = 0
                 while not communication.delete_from_backup(self.fingers[0], key):
-                    pass
+                    attempt += 1
+                    if attempt >= protocol.delete_from_backup_attempts_count:
+                        break
                 to_remove.add(key)
         for key in to_remove:
             del self.addresses[key]
@@ -156,5 +156,31 @@ class Node(object):
                 pass
             self.addresses[key] = value
         self.update_predecessor(ip_bytes)
-        self.backup = communication.get_backup()
+        self.backup = communication.get_backup(self.fingers[0])
 
+    def put(self, key, value):
+        key_hash = util.my_hash(key)
+        node_address = self.find_successor(key_hash)
+        if communication.add_entry(node_address, key_hash, self.ip_bytes):
+            self.storage[key_hash] = value
+            return True
+
+        return False
+
+    # key must be a null-terminated string presented as bytes
+    def get(self, key):
+        key_hash = util.my_hash(key)
+        maybe_res = self.storage.get(key_hash)
+        if maybe_res is not None:
+            return maybe_res
+
+        node_address = self.find_successor(key_hash)
+        data_address = communication.get_ip(node_address, key_hash)
+        for _ in range(protocol.get_attempts_count):
+            try:
+                data = communication.get_data(data_address, key_hash)
+                return data
+            except Exception as e:
+                log_action("Failed to get data: ", e, severity='ERROR')
+
+        return None

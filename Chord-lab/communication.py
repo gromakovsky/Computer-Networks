@@ -127,7 +127,7 @@ def get_predecessor(address_bytes):
     return send_and_receive_tcp(address_bytes, msg, on_receive, expected_codes, 'GET_PREDECESSOR')
 
 
-def add_entry(address_bytes, key, value):
+def add_entry(address_bytes, key_hash, value_ip_bytes):
     def on_receive(sock, chunk):
         if chunk[0] == protocol.message_codes['OK_RESPONSE']:
             return True
@@ -138,13 +138,45 @@ def add_entry(address_bytes, key, value):
             log_action("Received `ERROR' in response to `ADD_ENTRY'", 'ERROR')
             return False
 
-    msg = protocol.message_code('ADD_ENTRY')
+    msg = protocol.message_code('ADD_ENTRY') + util.pack_hash(key_hash) + value_ip_bytes
     expected_codes = [
         protocol.message_codes['OK_RESPONSE'],
         protocol.message_codes['COLLISION'],
         protocol.message_codes['ERROR'],
     ]
     return send_and_receive_tcp(address_bytes, msg, on_receive, expected_codes, 'ADD_ENTRY')
+
+
+def get_ip(address_bytes, key_hash):
+    def on_receive(sock, chunk):
+        if chunk[0] == protocol.message_codes['OK_RESPONSE']:
+            ip_bytes = util.read_msg(sock, 4, chunk[1:])
+            return ip_bytes
+        elif chunk[0] == protocol.message_codes['ERROR']:
+            raise RuntimeError("Received `ERROR' in response to `GET_IP'")
+
+    msg = protocol.message_code('GET_IP') + util.pack_hash(key_hash)
+    expected_code = [
+        protocol.message_codes['OK_RESPONSE'],
+        protocol.message_codes['ERROR'],
+    ]
+    return send_and_receive_tcp(address_bytes, msg, on_receive, expected_code, 'GET_IP')
+
+
+def get_data(address_bytes, key_hash):
+    def on_receive(sock, chunk):
+        if chunk[0] == protocol.message_codes['OK_RESPONSE']:
+            raw_data = util.read_length_then_msg(sock, 4, chunk[1:])
+            return raw_data
+        elif chunk[0] == protocol.message_codes['ERROR']:
+            raise RuntimeError("Received `ERROR' in response to `GET_DATA'")
+
+    msg = protocol.message_code('GET_DATA') + util.pack_hash(key_hash)
+    expected_code = [
+        protocol.message_codes['OK_RESPONSE'],
+        protocol.message_codes['ERROR'],
+    ]
+    return send_and_receive_tcp(address_bytes, msg, on_receive, expected_code, 'GET_DATA')
 
 
 def get_backup(address_bytes):
@@ -170,7 +202,7 @@ def get_backup(address_bytes):
     return send_and_receive_tcp(address_bytes, msg, on_receive, expected_codes, 'GET_BACKUP')
 
 
-def send_add_to_backup(address_bytes, key, value):
+def send_add_to_backup(address_bytes, key_hash, value_ip_bytes):
     def on_receive(sock, chunk):
         if chunk[0] == protocol.message_codes['OK_RESPONSE']:
             return True
@@ -178,7 +210,7 @@ def send_add_to_backup(address_bytes, key, value):
             log_action("Received `ERROR' in response to `ADD_TO_BACKUP'", 'ERROR')
             return False
 
-    msg = protocol.message_code('ADD_TO_BACKUP') + util.pack_hash(key) + value
+    msg = protocol.message_code('ADD_TO_BACKUP') + util.pack_hash(key_hash) + value_ip_bytes
     expected_codes = [
         protocol.message_codes['OK_RESPONSE'],
         protocol.message_codes['ERROR'],
@@ -186,7 +218,7 @@ def send_add_to_backup(address_bytes, key, value):
     return send_and_receive_tcp(address_bytes, msg, on_receive, expected_codes, 'ADD_TO_BACKUP')
 
 
-def delete_from_backup(address_bytes, key):
+def delete_from_backup(address_bytes, key_hash):
     def on_receive(sock, chunk):
         if chunk[0] == protocol.message_codes['OK_RESPONSE']:
             return True
@@ -194,7 +226,7 @@ def delete_from_backup(address_bytes, key):
             log_action("Received `ERROR' in response to `DELETE_FROM_BACKUP'", 'ERROR')
             return False
 
-    msg = protocol.message_code('DELETE_FROM_BACKUP') + util.pack_hash(key)
+    msg = protocol.message_code('DELETE_FROM_BACKUP') + util.pack_hash(key_hash)
     expected_codes = [
         protocol.message_codes['OK_RESPONSE'],
         protocol.message_codes['ERROR'],
