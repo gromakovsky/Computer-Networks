@@ -20,6 +20,11 @@ def main():
         sys.stderr.write("Couldn't launch TCP thread, aborting:\n" + str(e))
         sys.exit(1)
 
+    def finish():
+        udp_listener.socket.close()
+        tcp_listener.socket.close()
+        sys.exit(0)
+
     while True:
         try:
             inp = input('Enter command: ')
@@ -37,11 +42,13 @@ def main():
                     print('Success')
                 else:
                     print('Fail')
+            elif inp[:4].lower() == 'exit':
+                finish()
+            else:
+                print("Supported commands are `get', `put' and `finish'")
         except KeyboardInterrupt:
             print('Aborting on keyboard interrupt')
-            udp_listener.socket.close()
-            tcp_listener.socket.close()
-            sys.exit(0)
+            finish()
         except Exception as e:
             print('Error occurred:', e)
 
