@@ -49,7 +49,7 @@ def inc(x, i=1):   # x + i
     return (x + i) % protocol.modulo
 
 
-def dec(x, i=1): # x - i
+def dec(x, i=1):  # x - i
     return (x - i + protocol.modulo) % protocol.modulo
 
 
