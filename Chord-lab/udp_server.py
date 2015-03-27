@@ -3,7 +3,6 @@ import threading
 
 from log_utils import log_action
 import protocol
-from node import Node
 
 
 BUFFER_SIZE = 2**10
@@ -11,7 +10,7 @@ BUFFER_SIZE = 2**10
 
 class UPDServer(threading.Thread):
     def __init__(self, node):
-        threading.Thread.__init__(self, name='UDP Server')
+        threading.Thread.__init__(self, name='UDP Server', daemon=True)
         self.node = node
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.socket.bind(('', protocol.port))
@@ -27,5 +26,8 @@ class UPDServer(threading.Thread):
                     log_action("`INIT' message from", address, 'is malformed', severity='ERROR')
                 else:
                     self.node.process_init(ip_bytes)
+            elif data[0] == protocol.message_codes['KEEP_ALIVE']:
+                # log_action("Received `KEEP_ALIVE' message from", address)
+                self.node.process_keep_alive()
             else:
                 log_action('Received malformed message from', address)

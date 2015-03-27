@@ -32,13 +32,25 @@ def in_range(val, lo, hi):
         return lo <= val <= hi
 
 
+def inc(x, i=1):   # x + i
+    return (x + i) % protocol.modulo
+
+
+def dec(x, i=1): # x - i
+    return (x - i + protocol.modulo) % protocol.modulo
+
+
+def distance(lo, hi):
+    return (hi - lo + protocol.modulo) % protocol.modulo
+
+
 def read_msg(sock, length, already_read):
     total_read = len(already_read)
     chunks = [already_read]
     while total_read < length:
         chunk = sock.recv(TCP_BUFFER_SIZE)
         if not chunk:
-            return ''
+            raise RuntimeError('Socket connection was unexpectedly broken')
         chunks.append(chunk)
         total_read += len(chunk)
 
@@ -68,5 +80,3 @@ class MySocket(object):
 
     def close(self):
         self.sock.close()
-
-

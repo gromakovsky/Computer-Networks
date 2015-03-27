@@ -20,6 +20,13 @@ def main():
         sys.stderr.write("Couldn't launch TCP thread, aborting:\n" + str(e))
         sys.exit(1)
 
+    try:
+        while True:
+            pass
+    except KeyboardInterrupt:
+        tcp_serv.socket.close()
+        sys.exit(0)
+
 
 if __name__ == '__main__':
     main()
