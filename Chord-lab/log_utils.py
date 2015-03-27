@@ -1,5 +1,6 @@
 import sys
 import os
+import datetime
 
 debug_file = open(os.path.expanduser('~/Chord-debug'), mode='w')
 fingers_file = open(os.path.expanduser('~/Chord-fingers'), mode='w')
@@ -19,16 +20,18 @@ class Colors:
 
 
 def log_action(*args, severity='DEBUG'):
+    args_with_time = ['[' + str(datetime.datetime.now()) + ']']
+    args_with_time.extend(args)
     if severity == 'ERROR':
         args_list = [Colors.FAIL + '[ERROR]']
-        args_list.extend(args)
+        args_list.extend(args_with_time)
         args_list.append(Colors.ENDC)
         print(*args_list, file=sys.stderr)
     elif severity == 'DEBUG':
-        print(*args, file=debug_file, flush=True)
+        print(*args_with_time, file=debug_file, flush=True)
     elif severity == 'INFO':
         args_list = [Colors.OKBLUE + '[INFO]']
-        args_list.extend(args)
+        args_list.extend(args_with_time)
         args_list.append(Colors.ENDC)
         print(*args_list)
     elif severity == 'FINGERS':
