@@ -15,7 +15,6 @@ class ConnectionHandler(threading.Thread):
         self.node = node
 
     def run(self):
-        chunk = self.socket.recv(util.TCP_BUFFER_SIZE)
         code_to_handler = {
             protocol.message_codes['FIND_SUCCESSOR']: self.handle_find_successor,
             protocol.message_codes['GET_PREDECESSOR']: self.handle_get_predecessor,
@@ -31,6 +30,7 @@ class ConnectionHandler(threading.Thread):
             protocol.message_codes['DELETE_FROM_BACKUP']: self.handle_delete_from_backup,
         }
         try:
+            chunk = self.socket.recv(util.TCP_BUFFER_SIZE)
             if not chunk:
                 log_action('Connection from', self.address, 'unexpectedly closed', severity='ERROR')
             elif chunk[0] in code_to_handler:
@@ -41,6 +41,9 @@ class ConnectionHandler(threading.Thread):
             else:
                 log_action('Received malformed message from', self.address, ', code:', hex(chunk[0]),
                            severity='ERROR')
+        except Exception as e:
+            log_action('Something went wrong in TCP Connection Handler:', e, severity='ERROR')
+            self.reply_error()
         finally:
             self.socket.close()
 
@@ -61,8 +64,8 @@ class ConnectionHandler(threading.Thread):
 
     def handle_find_successor(self, chunk):
         self.log_message_receiving('FIND_SUCCESSOR')
-        ip_bytes = util.read_msg(self.socket, 4, chunk[1:])
-        res = self.node.find_successor(util.my_hash(ip_bytes))
+        key_hash = util.unpack_hash(util.read_msg(self.socket, 4, chunk[1:]))
+        res = self.node.find_successor(key_hash)
         msg = protocol.message_code('OK_RESPONSE') + res if res else protocol.message_code('ERROR')
         self.send_all(msg)
 
@@ -93,17 +96,19 @@ class ConnectionHandler(threading.Thread):
         self.log_message_receiving('GET_IP')
         key_hash = util.read_msg(self.socket, 4, chunk[1:])
         res = self.node.addresses.get(key_hash)
-        msg = protocol.message_code('OK_RESPONSE') + res if res is not None else protocol.message_code('ERROR')
-        self.send_all(msg)
+        if res in None:
+            self.reply_error()
+        else:
+            self.send_all(protocol.message_code('OK_RESPONSE') + res)
 
     def handle_get_data(self, chunk):
         self.log_message_receiving('GET_DATA')
         key_hash = util.read_msg(self.socket, 4, chunk[1:])
         res = self.node.storage.get(key_hash)
-        good = res is not None
-        code = protocol.message_code('OK_RESPONSE') if good else protocol.message_code('ERROR')
-        msg = code + (util.pack_length(len(res)) + res if good else b'')
-        self.send_all(msg)
+        if res in None:
+            self.reply_error()
+        else:
+            self.send_all(protocol.message_code('OK_RESPONSE') + util.pack_length(len(res)) + res)
 
     def handle_pick_up(self, chunk):
         self.log_message_receiving('PICK_UP')

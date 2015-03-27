@@ -34,9 +34,8 @@ def log_sending(msg_type, address_bytes):
     log_action("Sending `{}' message to".format(msg_type), util.readable_ip(address_bytes))
 
 
-def send_msg_tcp(address_bytes, msg, msg_type=None):
-    if msg_type is not None:
-        log_sending(msg_type, address_bytes)
+def send_msg_tcp(address_bytes, msg, msg_type):
+    log_sending(msg_type, address_bytes)
     s = util.MySocket()
     try:
         s.connect(util.readable_ip(address_bytes), protocol.port)
@@ -49,9 +48,8 @@ def log_receiving(msg_type, address_bytes):
     log_action("Received response to `{}' message from".format(msg_type), util.readable_ip(address_bytes))
 
 
-def send_and_receive_tcp(address_bytes, msg, callback, expected_codes, msg_type=None):
-    if msg_type is not None:
-        log_sending(msg_type, address_bytes)
+def send_and_receive_tcp(address_bytes, msg, callback, expected_codes, msg_type):
+    log_sending(msg_type, address_bytes)
     s = util.MySocket()
     try:
         s.connect(util.readable_ip(address_bytes), protocol.port)
@@ -60,15 +58,14 @@ def send_and_receive_tcp(address_bytes, msg, callback, expected_codes, msg_type=
         if not chunk:
             raise RuntimeError('Socket connection was unexpectedly broken')
         elif chunk[0] in expected_codes:
-            if msg_type is not None:
-                log_receiving(msg_type, address_bytes)
-                return callback(s.sock, chunk)
+            log_receiving(msg_type, address_bytes)
+            return callback(s.sock, chunk)
         elif chunk[0] in protocol.message_codes:
             raise RuntimeError("Received message with unexpected code in response to `{}' (code: {})".
-                               format(msg_type if msg_type is not None else '', hex(chunk[0])))
+                               format(msg_type, hex(chunk[0])))
         else:
             raise RuntimeError("Received malformed message in response to `{}' (code: {})".
-                               format(msg_type if msg_type is not None else '', hex(chunk[0])))
+                               format(msg_type, hex(chunk[0])))
     finally:
         s.close()
 
