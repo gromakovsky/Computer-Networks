@@ -30,30 +30,66 @@ class Node(object):
             self.background_workers.append(worker)
             worker.start()
 
-    def update_finger(self, idx, ip_bytes, need_lock=True):
-        log_action('Updating {}-th finger to'.format(idx), util.readable_ip(ip_bytes), severity='INFO')
-        if need_lock:
-            self.lock.acquire()
-        self.fingers[idx] = ip_bytes
-        self.fingers_hash[idx] = util.my_hash(ip_bytes)
-        if need_lock:
-            self.lock.release()
+    # user interface
+    def put(self, key, value):
+        key_hash = util.my_hash(key)
+        node_address = self.find_successor(key_hash)
+        log_action('Node responsible for key', key, ':', util.readable_ip(node_address), severity='INFO')
+        if communication.add_entry(node_address, key_hash, self.ip_bytes):
+            # concurrent access is not possible
+            self.storage[key_hash] = value
+            return True
 
-    def update_successor2(self, ip_bytes, need_lock=True):
-        log_action('Updating successor2 to', util.readable_ip(ip_bytes), severity='INFO')
-        if need_lock:
-            self.lock.acquire()
-        self.successor2 = ip_bytes
-        if need_lock:
-            self.lock.release()
+        return False
 
-    def update_predecessor(self, ip_bytes, need_lock=True):
-        if need_lock:
-            self.lock.acquire()
-        self.predecessor = ip_bytes
-        if need_lock:
-            self.lock.release()
+    # key must be a null-terminated string presented as bytes
+    def get(self, key):
+        key_hash = util.my_hash(key)
+        maybe_res = self.storage.get(key_hash)
+        if maybe_res is not None:
+            return maybe_res
 
+        node_address = self.find_successor(key_hash)
+        log_action('Node responsible for key', key, ':', util.readable_ip(node_address), severity='INFO')
+        data_address = communication.get_ip(node_address, key_hash)
+        log_action('Node responsible with key', key, ':', util.readable_ip(data_address), severity='INFO')
+        for _ in range(protocol.get_attempts_count):
+            try:
+                data = communication.get_data(data_address, key_hash)
+                return data
+            except Exception as e:
+                log_action("Attempt to get data failed with the following reason: ", e, severity='ERROR')
+
+        return None
+
+    # Background jobs
+    def process_keep_alive(self):
+        self.lock.acquire()
+        self.last_keep_alive = time.time()
+        self.lock.release()
+
+    def stabilize(self):
+        x = communication.get_predecessor(self.fingers[0])
+        if util.distance(self.ip_hash, self.fingers_hash[0]) > 1:
+            if util.in_range(util.my_hash(x), util.inc(self.ip_hash), util.dec(self.fingers_hash[0])):
+                self._update_finger(0, x)
+                self._update_successor2(communication.get_successor(x, self.fingers_hash[0]))
+
+        communication.send_notify(self.fingers[0])
+
+    def fix_fingers(self):
+        idx = random.randint(0, protocol.hash_size_bits - 1)
+        finger = self.find_successor(util.inc(self.ip_hash, 2**idx - 1))
+        if finger != self.fingers[idx]:
+            self._update_finger(idx, finger)
+
+    def successor_failed(self):
+        log_action('Successor {} failed'.format(util.readable_ip(self.fingers[0])), severity='INFO')
+        communication.send_pred_failed(self.successor2)
+        self._update_finger(0, self.successor2)
+        self._update_successor2(communication.get_successor(self.fingers[0], self.fingers_hash[0]))
+
+    # Chord implementation
     def process_init(self, ip_bytes):
         log_action("Processing `INIT' from", util.readable_ip(ip_bytes))
         if self.ip_bytes == ip_bytes:
@@ -70,18 +106,22 @@ class Node(object):
         if self.picked_up or not attempts_count:
             return
         log_action(util.readable_ip(ip_bytes), 'wants to pick us', severity='INFO')
+        successor = None
+        successor2 = None
         try:
             successor = communication.get_successor(ip_bytes, self.ip_hash)
             successor2 = communication.get_successor(ip_bytes, util.my_hash(successor))
         except Exception as e:
             log_action("Error occurred in processing `PICK_UP':", e, severity='ERROR')
-            self.process_pick_up(ip_bytes, attempts_count - 1)
-            return
+            if successor is None:
+                self.process_pick_up(ip_bytes, attempts_count - 1)
+                return
         self.lock.acquire()
         if not self.picked_up:
-            self.update_predecessor(ip_bytes, False)
-            self.update_finger(0, successor, False)
-            self.update_successor2(successor2, False)
+            self._update_predecessor(ip_bytes, False)
+            self._update_finger(0, successor, False)
+            if successor is not None:
+                self._update_successor2(successor2, False)
             self.picked_up = True
         self.lock.release()
 
@@ -99,91 +139,51 @@ class Node(object):
 
         return self.fingers[0]
 
-    def process_keep_alive(self):
-        self.lock.acquire()
-        self.last_keep_alive = time.time()
-        self.lock.release()
-
-    def successor_failed(self):
-        log_action('Successor {} failed'.format(util.readable_ip(self.fingers[0])), severity='INFO')
-        communication.send_pred_failed(self.successor2)
-        self.update_finger(0, self.successor2)
-        self.update_successor2(communication.get_successor(self.fingers[0], self.fingers_hash[0]))
-
-    def stabilize(self):
-        x = communication.get_predecessor(self.fingers[0])
-        if util.distance(self.ip_hash, self.fingers_hash[0]) > 1:
-            if util.in_range(util.my_hash(x), util.inc(self.ip_hash), util.dec(self.fingers_hash[0])):
-                self.update_finger(0, x)
-                self.update_successor2(communication.get_successor(x, self.fingers_hash[0]))
-
-        communication.send_notify(self.fingers[0])
-
-    def fix_fingers(self):
-        idx = random.randint(0, protocol.hash_size_bits - 1)
-        finger = self.find_successor(util.inc(self.ip_hash, 2**idx - 1))
-        if finger != self.fingers[idx]:
-            self.update_finger(idx, finger)
-
     def process_notify(self, ip_bytes):
         if util.in_range(util.my_hash(ip_bytes), util.inc(util.my_hash(self.predecessor)), util.dec(self.ip_hash)):
             old_predecessor = self.predecessor
-            self.update_predecessor(ip_bytes)
+            self._update_predecessor(ip_bytes)
             self.share_table(old_predecessor)
             self.clean_table(old_predecessor)
 
     def share_table(self, old_predecessor):
         for key, value in self.addresses.items():
             if util.in_range(key, util.my_hash(old_predecessor), util.dec(util.my_hash(self.predecessor))):
-                communication.add_entry(self.predecessor, key, value)
+                try:
+                    communication.add_entry(self.predecessor, key, value)
+                except Exception as e:
+                    log_action('Failed to send entry to', util.readable_ip(self.predecessor), '\nReason:', e,
+                               severity='ERROR')
 
     def clean_table(self, old_predecessor):
         to_remove = set()
         for key, value in self.addresses.items():
             if util.in_range(key, util.my_hash(old_predecessor), util.dec(util.my_hash(self.predecessor))):
                 attempt = 0
-                while not communication.delete_from_backup(self.fingers[0], key):
+                while True:
+                    success = communication.delete_from_backup(self.fingers[0], key)
                     attempt += 1
-                    if attempt >= protocol.delete_from_backup_attempts_count:
+                    if success or attempt >= protocol.delete_from_backup_attempts_count:
                         break
                 to_remove.add(key)
-        for key in to_remove:
-            del self.addresses[key]
+        with self.lock:
+            for key in to_remove:
+                del self.addresses[key]
 
     def deploy_and_update_backup(self, ip_bytes):
         for key, value in self.backup.items():
-            while not communication.add_to_backup(self.fingers[0], key, value):
-                pass
-            self.addresses[key] = value
-        self.update_predecessor(ip_bytes)
-        self.backup = communication.get_backup(self.fingers[0])
-
-    def put(self, key, value):
-        key_hash = util.my_hash(key)
-        node_address = self.find_successor(key_hash)
-        if communication.add_entry(node_address, key_hash, self.ip_bytes):
-            self.storage[key_hash] = value
-            return True
-
-        return False
-
-    # key must be a null-terminated string presented as bytes
-    def get(self, key):
-        key_hash = util.my_hash(key)
-        maybe_res = self.storage.get(key_hash)
-        if maybe_res is not None:
-            return maybe_res
-
-        node_address = self.find_successor(key_hash)
-        data_address = communication.get_ip(node_address, key_hash)
-        for _ in range(protocol.get_attempts_count):
-            try:
-                data = communication.get_data(data_address, key_hash)
-                return data
-            except Exception as e:
-                log_action("Attempt to get data failed with the following reason: ", e, severity='ERROR')
-
-        return None
+            attempt = 0
+            while True:
+                success = communication.add_to_backup(self.fingers[0], key, value)
+                attempt += 1
+                if success or attempt >= protocol.add_to_backup_attempts_count:
+                    break
+            with self.lock:
+                self.addresses[key] = value
+        self._update_predecessor(ip_bytes)
+        backup = communication.get_backup(self.fingers[0])
+        with self.lock:
+            self.backup = backup
 
     def add_to_addresses(self, key_hash, ip_bytes):
         if not util.in_range(key_hash, util.my_hash(self.predecessor), util.dec(self.ip_hash)):
@@ -195,26 +195,48 @@ class Node(object):
         if key_hash in self.addresses:
             return False
 
-        self.lock.acquire()
-        self.backup[key_hash] = ip_bytes
-        self.lock.release()
+        with self.lock:
+            self.backup[key_hash] = ip_bytes
 
         return True
 
     def delete_entry(self, key_hash):
         if key_hash in self.addresses:
-            self.lock.acquire()
-            del self.addresses[key_hash]
-            self.lock.release()
+            with self.lock:
+                del self.addresses[key_hash]
             return True
 
         return False
 
     def delete_from_backup(self, key_hash):
         if key_hash in self.backup:
-            self.lock.acquire()
-            del self.backup[key_hash]
-            self.lock.release()
+            with self.lock:
+                del self.backup[key_hash]
             return True
 
         return False
+
+    # internal modifiers
+    def _update_finger(self, idx, ip_bytes, need_lock=True):
+        log_action('Updating {}-th finger to'.format(idx), util.readable_ip(ip_bytes), severity='INFO')
+        if need_lock:
+            self.lock.acquire()
+        self.fingers[idx] = ip_bytes
+        self.fingers_hash[idx] = util.my_hash(ip_bytes)
+        if need_lock:
+            self.lock.release()
+
+    def _update_successor2(self, ip_bytes, need_lock=True):
+        log_action('Updating successor2 to', util.readable_ip(ip_bytes), severity='INFO')
+        if need_lock:
+            self.lock.acquire()
+        self.successor2 = ip_bytes
+        if need_lock:
+            self.lock.release()
+
+    def _update_predecessor(self, ip_bytes, need_lock=True):
+        if need_lock:
+            self.lock.acquire()
+        self.predecessor = ip_bytes
+        if need_lock:
+            self.lock.release()

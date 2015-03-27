@@ -12,6 +12,7 @@ fix_fingers_interval = 6
 join_attempts_count = 2
 join_interval = 3
 delete_from_backup_attempts_count = 3
+add_to_backup_attempts_count = 3
 get_attempts_count = 3
 
 message_codes = {
