@@ -70,10 +70,14 @@ class Node(object):
 
     def stabilize(self):
         x = communication.get_predecessor(self.fingers[0])
+        def do_update():
+            self._update_finger(0, x)
+            self._update_successor2(communication.get_successor(x, self.fingers_hash[0]))
         if util.distance(self.ip_hash, self.fingers_hash[0]) > 1:
             if util.in_range(util.my_hash(x), util.inc(self.ip_hash), util.dec(self.fingers_hash[0])):
-                self._update_finger(0, x)
-                self._update_successor2(communication.get_successor(x, self.fingers_hash[0]))
+                do_update()
+        elif self.ip_hash == self.fingers_hash[0] and x != self.ip_hash:
+                do_update()
 
         communication.send_notify(self.fingers[0])
 
@@ -121,7 +125,7 @@ class Node(object):
             self._update_predecessor(ip_bytes, False)
             self._update_finger(0, successor, False)
             if successor is not None:
-                self._update_successor2(successor2, False)
+                self._update_successor2(successor2 if successor2 != successor else self.ip_bytes, False)
             self.picked_up = True
         self.lock.release()
 
@@ -244,6 +248,7 @@ class Node(object):
             self.lock.release()
 
     def _update_predecessor(self, ip_bytes, need_lock=True):
+        log_action('Updating predecessor to', util.readable_ip(ip_bytes), severity='INFO')
         if need_lock:
             self.lock.acquire()
         self.predecessor = ip_bytes
