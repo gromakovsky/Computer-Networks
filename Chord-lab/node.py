@@ -51,9 +51,11 @@ class Node(object):
             return maybe_res
 
         node_address = self.find_successor(key_hash)
-        log_action('Node responsible for key', key, ':', util.readable_ip(node_address), severity='INFO')
+        log_action('Node responsible for key {} (hash: {}):'.format(key, key_hash), util.readable_ip(node_address),
+                   severity='INFO')
         data_address = communication.get_ip(node_address, key_hash)
-        log_action('Node responsible with key', key, ':', util.readable_ip(data_address), severity='INFO')
+        log_action('Node with key {} (hash: {}):'.format(key, key_hash), util.readable_ip(node_address),
+                   severity='INFO')
         for _ in range(protocol.get_attempts_count):
             try:
                 data = communication.get_data(data_address, key_hash)
@@ -236,7 +238,7 @@ class Node(object):
     def dump_addresses(self):
         log_action('Addresses:', severity='ADDRESSES')
         for key_hash, ip_bytes in self.addresses.items():
-            log_action(key_hash, util.readable_ip(ip_bytes))
+            log_action(key_hash, util.readable_ip(ip_bytes), severity='ADDRESSES')
 
     # internal modifiers
     def _update_finger(self, idx, ip_bytes, need_lock=True):
