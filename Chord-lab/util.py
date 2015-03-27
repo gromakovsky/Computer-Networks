@@ -25,6 +25,19 @@ def pack_hash(hash_int):
     return struct.pack('>I', hash_int)
 
 
+def unpack_hash(hash_bytes):
+    return struct.unpack('>I', hash_bytes)[0]
+
+
+# currently it is assumed that length always must be packed in 4 bytes
+def pack_length(length):
+    return struct.pack('>I', length)
+
+
+def unpack_length(length_bytes):
+    return struct.unpack('>I', length_bytes)[0]
+
+
 def in_range(val, lo, hi):
     if lo > hi:
         return not (hi < val < lo)
@@ -55,6 +68,21 @@ def read_msg(sock, length, already_read):
         total_read += len(chunk)
 
     return b''.join(chunks)
+
+
+def read_length_then_msg(sock, bytes_for_length, already_read):
+    total_read = len(already_read)
+    chunks = [already_read]
+    while total_read < bytes_for_length:
+        chunk = sock.recv(TCP_BUFFER_SIZE)
+        if not chunk:
+            raise RuntimeError('Socket connection was unexpectedly broken')
+        chunks.append(chunk)
+        total_read += len(chunk)
+
+    read_bytes = b''.join(chunks)
+    length = unpack_length(read_bytes[:bytes_for_length])
+    return read_msg(sock, length, read_bytes[bytes_for_length:])
 
 
 def send_all(sock, msg):

@@ -9,108 +9,127 @@ import myip
 # UDP
 def send_init():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-    my_ip_bytes = myip.get_ip_bytes()
-    msg = protocol.message_code('INIT') + my_ip_bytes
-    log_action("Broadcasting `INIT' message with IP:", util.readable_ip(my_ip_bytes))
-    s.sendto(msg, ('<broadcast>', protocol.port))
-    s.close()
+    try:
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+        my_ip_bytes = myip.get_ip_bytes()
+        msg = protocol.message_code('INIT') + my_ip_bytes
+        log_action("Broadcasting `INIT' message with IP:", util.readable_ip(my_ip_bytes))
+        s.sendto(msg, ('<broadcast>', protocol.port))
+    finally:
+        s.close()
 
 
 def send_keep_alive(ip_bytes):
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    msg = protocol.message_code('KEEP_ALIVE')
-    # log_action("Sending `KEEP_ALIVE' message to", util.readable_ip(ip_bytes))
-    s.sendto(msg, (util.readable_ip(ip_bytes), protocol.port))
-    s.close()
+    try:
+        msg = protocol.message_code('KEEP_ALIVE')
+        # log_action("Sending `KEEP_ALIVE' message to", util.readable_ip(ip_bytes))
+        s.sendto(msg, (util.readable_ip(ip_bytes), protocol.port))
+    finally:
+        s.close()
 
 
 # TCP
-def send_msg(ip_bytes, msg):
+def log_sending(msg_type, address_bytes):
+    log_action("Sending `{}' message to".format(msg_type), util.readable_ip(address_bytes))
+
+
+def send_msg_tcp(address_bytes, msg, msg_type=None):
+    if msg_type is not None:
+        log_sending(msg_type, address_bytes)
     s = util.MySocket()
     try:
-        s.connect(util.readable_ip(ip_bytes), protocol.port)
+        s.connect(util.readable_ip(address_bytes), protocol.port)
         s.send(msg)
     finally:
         s.close()
 
 
-def send_pick_up(ip_bytes):
-    msg = protocol.message_code('PICK_UP') + myip.get_ip_bytes()
-    log_action("Sending `PICK_UP' message to", util.readable_ip(ip_bytes))
-    send_msg(ip_bytes, msg)
+def log_receiving(msg_type, address_bytes):
+    log_action("Received response to `{}' message from".format(msg_type), util.readable_ip(address_bytes))
 
 
-def get_successor(ip_bytes, key_hash):
+def send_and_receive_tcp(address_bytes, msg, callback, expected_codes, msg_type=None):
+    if msg_type is not None:
+        log_sending(msg_type, address_bytes)
     s = util.MySocket()
     try:
-        s.connect(util.readable_ip(ip_bytes), protocol.port)
-        msg = protocol.message_code('FIND_SUCCESSOR') + util.pack_hash(key_hash)
-        log_action("Sending `FIND_SUCCESSOR' message to", util.readable_ip(ip_bytes))
-        s.send(msg)
-        chunk = s.sock.recv(util.TCP_BUFFER_SIZE)
-        if not chunk:
-            raise RuntimeError('Socket connection was unexpectedly broken')
-        if chunk[0] == protocol.message_code('OK_RESPONSE')[0]:
-            log_action("Received response to `FIND_SUCCESSOR' message from", util.readable_ip(ip_bytes))
-            ip_bytes = util.read_msg(s.sock, 4, chunk[1:])
-            return ip_bytes
-        elif chunk[0] == protocol.message_code('ERROR')[0]:
-            raise RuntimeError("Received `ERROR' in response to `FIND_SUCCESSOR'")
-        else:
-            raise RuntimeError("Received malformed message in response to `FIND_SUCCESSOR' (code: {})".
-                               format(hex(chunk[0])))
-    finally:
-        s.close()
-
-
-def get_predecessor(ip_bytes):
-    s = util.MySocket()
-    try:
-        s.connect(util.readable_ip(ip_bytes), protocol.port)
-        msg = protocol.message_code('GET_PREDECESSOR')
-        log_action("Sending `GET_PREDECESSOR' message to", util.readable_ip(ip_bytes))
+        s.connect(util.readable_ip(address_bytes), protocol.port)
         s.send(msg)
         chunk = s.sock.recv(util.TCP_BUFFER_SIZE)
         if not chunk:
             raise RuntimeError('Socket connection was unexpectedly broken')
-        if chunk[0] == protocol.message_code('OK_RESPONSE')[0]:
-            log_action("Received response to `GET_PREDECESSOR' message from", util.readable_ip(ip_bytes))
-            ip_bytes = util.read_msg(s.sock, 4, chunk[1:])
-            return ip_bytes
-        elif chunk[0] == protocol.message_code('ERROR')[0]:
-            raise RuntimeError("Received `ERROR' in response to `GET_PREDECESSOR'")
+        elif chunk[0] in expected_codes:
+            if msg_type is not None:
+                log_receiving(msg_type, address_bytes)
+                return callback(s.sock, chunk)
+        elif chunk[0] in protocol.message_codes:
+            raise RuntimeError("Received message with unexpected code in response to `{}' (code: {})".
+                               format(msg_type if msg_type is not None else '', hex(chunk[0])))
         else:
-            raise RuntimeError("Received malformed message in response to `GET_PREDECESSOR' (code: {})".
-                               format(hex(chunk[0])))
+            raise RuntimeError("Received malformed message in response to `{}' (code: {})".
+                               format(msg_type if msg_type is not None else '', hex(chunk[0])))
     finally:
         s.close()
 
 
-def send_notify(ip_bytes):
+# Simple messages with no response
+def send_notify(address_bytes):
     msg = protocol.message_code('NOTIFY') + myip.get_ip_bytes()
-    log_action("Sending `NOTIFY' message to", util.readable_ip(ip_bytes))
-    send_msg(ip_bytes, msg)
+    send_msg_tcp(address_bytes, msg, 'NOTIFY')
 
 
-def send_pred_failed(ip_bytes):
+def send_pick_up(address_bytes):
+    msg = protocol.message_code('PICK_UP') + myip.get_ip_bytes()
+    send_msg_tcp(address_bytes, msg, 'PICK_UP')
+
+
+def send_pred_failed(address_bytes):
     msg = protocol.message_code('PRED_FAILED') + myip.get_ip_bytes()
-    log_action("Sending `PRED_FAILED' message to", util.readable_ip(ip_bytes))
-    send_msg(ip_bytes, msg)
+    send_msg_tcp(address_bytes, msg, 'PRED_FAILED')
 
 
-def send_add_entry(ip_bytes, key, value):
-    s = util.MySocket()
-    try:
-        s.connect(util.readable_ip(ip_bytes), protocol.port)
-        msg = protocol.message_code('ADD_ENTRY') + util.pack_hash(key) + value
-        log_action("Sending `ADD_ENTRY' message to", util.readable_ip(ip_bytes))
-        s.send(msg)
-        chunk = s.sock.recv(util.TCP_BUFFER_SIZE)
-        if not chunk:
-            raise RuntimeError('Socket connection was unexpectedly broken')
+def send_delete_entry(address_bytes, key):
+    msg = protocol.message_code('DELETE_ENTRY') + util.pack_hash(key)
+    send_msg_tcp(address_bytes, msg, 'DELETE_ENTRY')
+
+
+# More complex messages expecting response
+def get_successor(address_bytes, key_hash):
+    def on_receive(sock, chunk):
         if chunk[0] == protocol.message_codes['OK_RESPONSE']:
-            log_action("Received response to `ADD_ENTRY' message from", util.readable_ip(ip_bytes))
+            ip_bytes = util.read_msg(sock, 4, chunk[1:])
+            return ip_bytes
+        elif chunk[0] == protocol.message_codes['ERROR']:
+            raise RuntimeError("Received `ERROR' in response to `FIND_SUCCESSOR'")
+
+    msg = protocol.message_code('FIND_SUCCESSOR') + util.pack_hash(key_hash)
+    expected_codes = [
+        protocol.message_codes['OK_RESPONSE'],
+        protocol.message_codes['ERROR'],
+    ]
+    return send_and_receive_tcp(address_bytes, msg, on_receive, expected_codes, 'FIND_SUCCESSOR')
+
+
+def get_predecessor(address_bytes):
+    def on_receive(sock, chunk):
+        if chunk[0] == protocol.message_codes['OK_RESPONSE']:
+            ip_bytes = util.read_msg(sock, 4, chunk[1:])
+            return ip_bytes
+        elif chunk[0] == protocol.message_codes['ERROR']:
+            raise RuntimeError("Received `ERROR' in response to `GET_PREDECESSOR'")
+
+    msg = protocol.message_code('GET_PREDECESSOR')
+    expected_codes = [
+        protocol.message_codes['OK_RESPONSE'],
+        protocol.message_codes['ERROR'],
+    ]
+    return send_and_receive_tcp(address_bytes, msg, on_receive, expected_codes, 'GET_PREDECESSOR')
+
+
+def add_entry(address_bytes, key, value):
+    def on_receive(sock, chunk):
+        if chunk[0] == protocol.message_codes['OK_RESPONSE']:
             return True
         elif chunk[0] == protocol.message_codes['COLLISION']:
             log_action("Received `COLLISION' in response to `ADD_ENTRY'", 'INFO')
@@ -118,64 +137,66 @@ def send_add_entry(ip_bytes, key, value):
         elif chunk[0] == protocol.message_codes['ERROR']:
             log_action("Received `ERROR' in response to `ADD_ENTRY'", 'ERROR')
             return False
-        else:
-            raise RuntimeError("Received malformed message in response to `ADD_ENTRY' (code: {})".
-                               format(hex(chunk[0])))
-    finally:
-        s.close()
+
+    msg = protocol.message_code('ADD_ENTRY')
+    expected_codes = [
+        protocol.message_codes['OK_RESPONSE'],
+        protocol.message_codes['COLLISION'],
+        protocol.message_codes['ERROR'],
+    ]
+    return send_and_receive_tcp(address_bytes, msg, on_receive, expected_codes, 'ADD_ENTRY')
 
 
-def delete_from_backup(ip_bytes, key):
-    s = util.MySocket()
-    try:
-        s.connect(util.readable_ip(ip_bytes), protocol.port)
-        msg = protocol.message_code('DELETE_FROM_BACKUP') + util.pack_hash(key)
-        log_action("Sending `DELETE_FROM_BACKUP' message to", util.readable_ip(ip_bytes))
-        s.send(msg)
-        chunk = s.sock.recv(util.TCP_BUFFER_SIZE)
-        if not chunk:
-            raise RuntimeError('Socket connection was unexpectedly broken')
+def get_backup(address_bytes):
+    def on_receive(sock, chunk):
         if chunk[0] == protocol.message_codes['OK_RESPONSE']:
-            log_action("Received response to `ADD_ENTRY' message from", util.readable_ip(ip_bytes))
+            raw_backup = util.read_length_then_msg(sock, 4, chunk[1:])
+            if len(raw_backup) % 8 != 0:
+                raise RuntimeError("Received malformed message in response to `GET_BACKUP'. Size must be multiple of 8")
+            backup = {}
+            for i in range(raw_backup / 8):
+                key = util.unpack_hash(raw_backup[i * 8:i * 8 + 4])
+                value = raw_backup[i * 8 + 4:i * 8 + 8]
+                backup[key] = value
+            return backup
+        elif chunk[0] == protocol.message_codes['ERROR']:
+            raise RuntimeError("Received `ERROR' in response to `GET_BACKUP'")
+
+    msg = protocol.message_code('GET_BACKUP')
+    expected_codes = [
+        protocol.message_codes['OK_RESPONSE'],
+        protocol.message_codes['ERROR'],
+    ]
+    return send_and_receive_tcp(address_bytes, msg, on_receive, expected_codes, 'GET_BACKUP')
+
+
+def send_add_to_backup(address_bytes, key, value):
+    def on_receive(sock, chunk):
+        if chunk[0] == protocol.message_codes['OK_RESPONSE']:
             return True
         elif chunk[0] == protocol.message_codes['ERROR']:
-            log_action("Received `ERROR' in response to `ADD_ENTRY'", 'ERROR')
+            log_action("Received `ERROR' in response to `ADD_TO_BACKUP'", 'ERROR')
             return False
-        else:
-            raise RuntimeError("Received malformed message in response to `ADD_ENTRY' (code: {})".
-                               format(hex(chunk[0])))
-    finally:
-        s.close()
+
+    msg = protocol.message_code('ADD_TO_BACKUP') + util.pack_hash(key) + value
+    expected_codes = [
+        protocol.message_codes['OK_RESPONSE'],
+        protocol.message_codes['ERROR'],
+    ]
+    return send_and_receive_tcp(address_bytes, msg, on_receive, expected_codes, 'ADD_TO_BACKUP')
 
 
-def send_delete_entry(ip_bytes, key):
-    msg = protocol.message_code('DELETE_ENTRY') + util.pack_hash(key)
-    log_action("Sending `DELETE_ENTRY' message to", util.readable_ip(ip_bytes))
-    send_msg(ip_bytes, msg)
-
-
-def send_add_to_backup(ip_bytes, key, value):
-    s = util.MySocket()
-    try:
-        s.connect(util.readable_ip(ip_bytes), protocol.port)
-        msg = protocol.message_code('ADD_TO_BACKUP') + util.pack_hash(key) + value
-        log_action("Sending `ADD_TO_BACKUP' message to", util.readable_ip(ip_bytes))
-        s.send(msg)
-        chunk = s.sock.recv(util.TCP_BUFFER_SIZE)
-        if not chunk:
-            raise RuntimeError('Socket connection was unexpectedly broken')
+def delete_from_backup(address_bytes, key):
+    def on_receive(sock, chunk):
         if chunk[0] == protocol.message_codes['OK_RESPONSE']:
-            log_action("Received response to `ADD_ENTRY' message from", util.readable_ip(ip_bytes))
             return True
         elif chunk[0] == protocol.message_codes['ERROR']:
-            log_action("Received `ERROR' in response to `ADD_ENTRY'", 'ERROR')
+            log_action("Received `ERROR' in response to `DELETE_FROM_BACKUP'", 'ERROR')
             return False
-        else:
-            raise RuntimeError("Received malformed message in response to `ADD_ENTRY' (code: {})".
-                               format(hex(chunk[0])))
-    finally:
-        s.close()
 
-
-def get_backup():
-    pass
+    msg = protocol.message_code('DELETE_FROM_BACKUP') + util.pack_hash(key)
+    expected_codes = [
+        protocol.message_codes['OK_RESPONSE'],
+        protocol.message_codes['ERROR'],
+    ]
+    return send_and_receive_tcp(address_bytes, msg, on_receive, expected_codes, 'DELETE_FROM_BACKUP')
