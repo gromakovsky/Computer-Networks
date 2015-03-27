@@ -4,6 +4,7 @@ import datetime
 
 debug_file = open(os.path.expanduser('~/Chord-debug'), mode='w')
 fingers_file = open(os.path.expanduser('~/Chord-fingers'), mode='w')
+addresses_file = open(os.path.expanduser('~/Chord-addresses'), mode='w')
 # debug_file = sys.stdout
 # debug_file = open(os.devnull, mode='w')
 
@@ -36,3 +37,5 @@ def log_action(*args, severity='DEBUG'):
         print(*args_list)
     elif severity == 'FINGERS':
         print(*args, file=fingers_file, flush=True)
+    elif severity == 'ADDRESSES':
+        print(*args, file=addresses_file, flush=True)

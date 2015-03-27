@@ -34,7 +34,8 @@ class Node(object):
     def put(self, key, value):
         key_hash = util.my_hash(key)
         node_address = self.find_successor(key_hash)
-        log_action('Node responsible for key', key, ':', util.readable_ip(node_address), severity='INFO')
+        log_action('Node responsible for key {} (hash: {}):'.format(key, key_hash), util.readable_ip(node_address),
+                   severity='INFO')
         if communication.add_entry(node_address, key_hash, self.ip_bytes):
             # concurrent access is not possible
             self.storage[key_hash] = value
@@ -196,7 +197,11 @@ class Node(object):
         if not util.in_range(key_hash, util.my_hash(self.predecessor), util.dec(self.ip_hash)):
             return False
 
-        return communication.add_to_backup(self.fingers[0], key_hash, ip_bytes)
+        if communication.add_to_backup(self.fingers[0], key_hash, ip_bytes):
+            self._add_address(key_hash, ip_bytes)
+            return True
+        else:
+            return False
 
     def add_to_backup(self, key_hash, ip_bytes):
         if key_hash in self.addresses:
@@ -209,8 +214,7 @@ class Node(object):
 
     def delete_entry(self, key_hash):
         if key_hash in self.addresses:
-            with self.lock:
-                del self.addresses[key_hash]
+            self._delete_address(key_hash)
             return True
 
         return False
@@ -228,6 +232,11 @@ class Node(object):
         log_action('Fingers:', severity='FINGERS')
         for i in range(len(self.fingers)):
             log_action(i, util.readable_ip(self.fingers[i]), self.fingers_hash[i], severity='FINGERS')
+
+    def dump_addresses(self):
+        log_action('Addresses:', severity='ADDRESSES')
+        for key_hash, ip_bytes in self.addresses.items():
+            log_action(key_hash, util.readable_ip(ip_bytes))
 
     # internal modifiers
     def _update_finger(self, idx, ip_bytes, need_lock=True):
@@ -261,3 +270,12 @@ class Node(object):
         self.predecessor = ip_bytes
         if need_lock:
             self.lock.release()
+
+    def _add_address(self, key_hash, ip_bytes):
+        with self.lock:
+            self.addresses[key_hash] = ip_bytes
+            self.dump_addresses()
+
+    def _delete_address(self, key_hash):
+        with self.lock:
+            del self.addresses[key_hash]
