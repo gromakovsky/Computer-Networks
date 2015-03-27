@@ -96,7 +96,7 @@ class ConnectionHandler(threading.Thread):
         self.log_message_receiving('GET_IP')
         key_hash = util.read_msg(self.socket, 4, chunk[1:])
         res = self.node.addresses.get(key_hash)
-        if res in None:
+        if res is None:
             self.reply_error()
         else:
             self.send_all(protocol.message_code('OK_RESPONSE') + res)
@@ -105,7 +105,7 @@ class ConnectionHandler(threading.Thread):
         self.log_message_receiving('GET_DATA')
         key_hash = util.read_msg(self.socket, 4, chunk[1:])
         res = self.node.storage.get(key_hash)
-        if res in None:
+        if res is None:
             self.reply_error()
         else:
             self.send_all(protocol.message_code('OK_RESPONSE') + util.pack_length(len(res)) + res)

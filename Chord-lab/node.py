@@ -199,6 +199,8 @@ class Node(object):
         self.backup[key_hash] = ip_bytes
         self.lock.release()
 
+        return True
+
     def delete_entry(self, key_hash):
         if key_hash in self.addresses:
             self.lock.acquire()
