@@ -5,20 +5,20 @@ from log_utils import log_action
 import protocol
 
 
-BUFFER_SIZE = 2**10
+UDP_BUFFER_SIZE = 2**10
 
 
-class UPDServer(threading.Thread):
+class Listener(threading.Thread):
     def __init__(self, node):
-        threading.Thread.__init__(self, name='UDP Server', daemon=True)
+        threading.Thread.__init__(self, name='UDP Listener', daemon=True)
         self.node = node
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.socket.bind(('', protocol.port))
 
     def run(self):
-        log_action('UDP server is listening on port', protocol.port)
+        log_action('Listening on UDP port', protocol.port, severity='INFO')
         while True:
-            data, address = self.socket.recvfrom(BUFFER_SIZE)
+            data, address = self.socket.recvfrom(UDP_BUFFER_SIZE)
             if data[0] == protocol.message_codes['INIT']:
                 log_action("Received `INIT' message from", address)
                 ip_bytes = data[1:]
@@ -30,4 +30,4 @@ class UPDServer(threading.Thread):
                 # log_action("Received `KEEP_ALIVE' message from", address)
                 self.node.process_keep_alive()
             else:
-                log_action('Received malformed message from', address)
+                log_action('Received malformed UDP message from', address, 'code:', hex(data[0]), severity='ERROR')

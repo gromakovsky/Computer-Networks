@@ -52,18 +52,18 @@ class ConnectionHandler(threading.Thread):
         self.socket.close()
 
 
-class TCPServer(threading.Thread):
+class Listener(threading.Thread):
     def __init__(self, node):
-        threading.Thread.__init__(self, name='TCP Server', daemon=True)
+        threading.Thread.__init__(self, name='TCP Listener', daemon=True)
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.bind(('', protocol.port))
         self.socket.listen(8)
         self.node = node
 
     def run(self):
-        log_action('TCP server is listening on port', protocol.port)
+        log_action('Listening on TCP port', protocol.port, severity='INFO')
         while True:
             client_socket, address = self.socket.accept()
-            log_action('TCP Server received a connection from', address)
+            log_action('TCP Listener received a connection from', address)
             connection_processor = ConnectionHandler(client_socket, address, self.node)
             connection_processor.start()
