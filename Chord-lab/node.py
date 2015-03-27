@@ -7,82 +7,7 @@ import util
 import myip
 import communication
 import protocol
-
-
-class NodeInitializer(threading.Thread):
-    def __init__(self, node):
-        threading.Thread.__init__(self, name='Node Initializer', daemon=True)
-        self.node = node
-
-    def run(self):
-        while not self.node.picked_up:
-            try:
-                communication.send_init()
-            except Exception as e:
-                log_action("Error occurred in sending `INIT':", e, severity='ERROR')
-            time.sleep(protocol.init_interval)
-
-
-class AliveKeeper(threading.Thread):
-    def __init__(self, node):
-        threading.Thread.__init__(self, name='Alive Keeper', daemon=True)
-        self.node = node
-
-    def run(self):
-        time.sleep(protocol.keep_alive_interval)
-        while True:
-            if self.node.predecessor:
-                try:
-                    communication.send_keep_alive(self.node.predecessor)
-                except Exception as e:
-                    log_action("Error occurred in sending `KEEP_ALIVE':", e, severity='ERROR')
-                time.sleep(protocol.keep_alive_interval)
-
-
-class Stabilizer(threading.Thread):
-    def __init__(self, node):
-        threading.Thread.__init__(self, name='Stabilizer', daemon=True)
-        self.node = node
-
-    def run(self):
-        time.sleep(protocol.stabilize_interval)
-        while True:
-            try:
-                self.node.stabilize()
-            except Exception as e:
-                log_action('Error occurred in stabilization:', e, severity='ERROR')
-            time.sleep(protocol.stabilize_interval)
-
-
-class FingersFixer(threading.Thread):
-    def __init__(self, node):
-        threading.Thread.__init__(self, name='Fingers Fixer', daemon=True)
-        self.node = node
-
-    def run(self):
-        time.sleep(protocol.fix_fingers_interval)
-        while True:
-            try:
-                self.node.fix_fingers()
-            except Exception as e:
-                log_action('Error occurred in fingers fixing:', e, severity='ERROR')
-            time.sleep(protocol.fix_fingers_interval)
-
-
-class KeepAliveTracker(threading.Thread):
-    def __init__(self, node):
-        threading.Thread.__init__(self, name='Keep Alive Tracker', daemon=True)
-        self.node = node
-
-    def run(self):
-        time.sleep(protocol.max_no_keep_alive)
-        while True:
-            if time.time() - self.node.last_keep_alive > protocol.max_no_keep_alive:
-                try:
-                    self.node.successor_failed()
-                except Exception as e:
-                    log_action("Error occurred in processing successor's failure:", e, severity='ERROR')
-            time.sleep(protocol.max_no_keep_alive)
+import background
 
 
 class Node(object):
@@ -94,19 +19,16 @@ class Node(object):
         self.predecessor = self.ip_bytes
         self.successor2 = self.ip_bytes
         self.picked_up = False
-        self.initializer_thread = NodeInitializer(self)
-        self.initializer_thread.start()
-        self.keep_alive_thread = AliveKeeper(self)
-        self.keep_alive_thread.start()
-        self.stabilizer = Stabilizer(self)
-        self.stabilizer.start()
-        self.fingers_fixer = FingersFixer(self)
-        self.fingers_fixer.start()
         self.lock = threading.Lock()
         self.last_keep_alive = time.time()
         self.addresses = dict()
         self.backup = dict()
         self.storage = dict()
+        self.background_workers = []
+        for background_thread_class in background.background_thread_classes:
+            worker = background_thread_class(self)
+            self.background_workers.append(worker)
+            worker.start()
 
     def update_finger(self, idx, ip_bytes, need_lock=True):
         log_action('Updating {}-th finger to'.format(idx), util.readable_ip(ip_bytes), severity='INFO')
