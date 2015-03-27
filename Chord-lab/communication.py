@@ -92,7 +92,10 @@ def send_delete_entry(address_bytes, key):
 
 
 # More complex messages expecting response
-def get_successor(address_bytes, key_hash):
+def get_successor(address_bytes, key_hash, node):
+    if address_bytes == node.ip_bytes:
+        return node.find_successor(key_hash)
+
     def on_receive(sock, chunk):
         if chunk[0] == protocol.message_codes['OK_RESPONSE']:
             ip_bytes = util.read_msg(sock, 4, chunk[1:])

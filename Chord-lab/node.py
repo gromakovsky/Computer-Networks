@@ -69,10 +69,11 @@ class Node(object):
         self.lock.release()
 
     def stabilize(self):
-        x = communication.get_predecessor(self.fingers[0])
+        x = communication.get_predecessor(self.fingers[0]) if self.fingers[0] != self.ip_bytes else self.predecessor
+
         def do_update():
             self._update_finger(0, x)
-            self._update_successor2(communication.get_successor(x, self.fingers_hash[0]))
+            self._update_successor2(communication.get_successor(x, self.fingers_hash[0], self))
         if util.distance(self.ip_hash, self.fingers_hash[0]) > 1:
             if util.in_range(util.my_hash(x), util.inc(self.ip_hash), util.dec(self.fingers_hash[0])):
                 do_update()
@@ -91,7 +92,7 @@ class Node(object):
         log_action('Successor {} failed'.format(util.readable_ip(self.fingers[0])), severity='INFO')
         communication.send_pred_failed(self.successor2)
         self._update_finger(0, self.successor2)
-        self._update_successor2(communication.get_successor(self.fingers[0], self.fingers_hash[0]))
+        self._update_successor2(communication.get_successor(self.fingers[0], self.fingers_hash[0]), self)
 
     # Chord implementation
     def process_init(self, ip_bytes):
@@ -113,8 +114,8 @@ class Node(object):
         successor = None
         successor2 = None
         try:
-            successor = communication.get_successor(ip_bytes, self.ip_hash)
-            successor2 = communication.get_successor(ip_bytes, util.my_hash(successor))
+            successor = communication.get_successor(ip_bytes, self.ip_hash, self)
+            successor2 = communication.get_successor(ip_bytes, util.my_hash(successor), self)
         except Exception as e:
             log_action("Error occurred in processing `PICK_UP':", e, severity='ERROR')
             if successor is None:
@@ -135,7 +136,7 @@ class Node(object):
         for ip_bytes in reversed(self.fingers):
             if util.in_range(util.my_hash(ip_bytes), self.ip_hash, util.dec(key_hash)):
                 try:
-                    x = communication.get_successor(ip_bytes, key_hash)
+                    x = communication.get_successor(ip_bytes, key_hash, self)
                     return x
                 except Exception as e:
                     log_action('Failed to get successor from', util.readable_ip(ip_bytes), '\nReason:', e,
@@ -240,6 +241,8 @@ class Node(object):
         self.dump_fingers()
 
     def _update_successor2(self, ip_bytes, need_lock=True):
+        if self.successor2 == ip_bytes:
+            return
         log_action('Updating successor2 to', util.readable_ip(ip_bytes), severity='INFO')
         if need_lock:
             self.lock.acquire()
@@ -248,6 +251,8 @@ class Node(object):
             self.lock.release()
 
     def _update_predecessor(self, ip_bytes, need_lock=True):
+        if self.predecessor == ip_bytes:
+            return
         log_action('Updating predecessor to', util.readable_ip(ip_bytes), severity='INFO')
         if need_lock:
             self.lock.acquire()
