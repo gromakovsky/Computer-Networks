@@ -3,6 +3,7 @@ import threading
 
 from log_utils import log_action
 import protocol
+import myip
 
 
 UDP_BUFFER_SIZE = 2**10
@@ -22,11 +23,11 @@ class Listener(threading.Thread):
             try:
                 data, address = self.socket.recvfrom(UDP_BUFFER_SIZE)
                 if data[0] == protocol.message_codes['INIT']:
-                    log_action("Received `INIT' message from", address)
                     ip_bytes = data[1:]
                     if len(ip_bytes) != 4:
                         log_action("`INIT' message from", address, 'is malformed', severity='ERROR')
-                    else:
+                    elif myip.get_ip_bytes() != ip_bytes:
+                        log_action("Received `INIT' message from", address)
                         self.node.process_init(ip_bytes)
                 elif data[0] == protocol.message_codes['KEEP_ALIVE']:
                     # log_action("Received `KEEP_ALIVE' message from", address)
