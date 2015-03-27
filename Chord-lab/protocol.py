@@ -4,11 +4,11 @@ import struct
 port = 7777
 hash_size_bits = 32
 modulo = 2**hash_size_bits
-init_interval = 8
-keep_alive_interval = 4
+init_interval = 3
+keep_alive_interval = 2
 max_no_keep_alive = 30
-stabilize_interval = 6
-fix_fingers_interval = 6
+stabilize_interval = 3
+fix_fingers_interval = 3
 join_attempts_count = 2
 join_interval = 3
 delete_from_backup_attempts_count = 3
