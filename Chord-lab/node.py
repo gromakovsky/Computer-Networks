@@ -216,8 +216,16 @@ class Node(object):
 
         return False
 
+    # logging
+    def dump_fingers(self):
+        log_action('Fingers:', severity='FINGERS')
+        for i in range(len(self.fingers)):
+            log_action(i, util.readable_ip(self.fingers[i]), self.fingers_hash[i], severity='FINGERS')
+
     # internal modifiers
     def _update_finger(self, idx, ip_bytes, need_lock=True):
+        if self.fingers[idx] == ip_bytes:
+            return
         log_action('Updating {}-th finger to'.format(idx), util.readable_ip(ip_bytes), severity='INFO')
         if need_lock:
             self.lock.acquire()
@@ -225,6 +233,7 @@ class Node(object):
         self.fingers_hash[idx] = util.my_hash(ip_bytes)
         if need_lock:
             self.lock.release()
+        self.dump_fingers()
 
     def _update_successor2(self, ip_bytes, need_lock=True):
         log_action('Updating successor2 to', util.readable_ip(ip_bytes), severity='INFO')

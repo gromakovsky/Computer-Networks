@@ -3,6 +3,7 @@ import sys
 import UDPListener
 import TCPListener
 from node import Node
+import myip
 
 
 def main():
@@ -25,6 +26,7 @@ def main():
         tcp_listener.socket.close()
         sys.exit(0)
 
+    print('Your IP is:', myip.get_readable_ip())
     while True:
         try:
             inp = input('Enter command: ')

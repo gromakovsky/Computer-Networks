@@ -1,7 +1,8 @@
 import sys
 import os
 
-debug_file = open('debug_log', mode='w')
+debug_file = open(os.path.expanduser('~/Chord-debug'), mode='w')
+fingers_file = open(os.path.expanduser('~/Chord-fingers'), mode='w')
 # debug_file = sys.stdout
 # debug_file = open(os.devnull, mode='w')
 
@@ -30,3 +31,5 @@ def log_action(*args, severity='DEBUG'):
         args_list.extend(args)
         args_list.append(Colors.ENDC)
         print(*args_list)
+    elif severity == 'FINGERS':
+        print(*args, file=fingers_file, flush=True)
