@@ -41,8 +41,6 @@ class ConnectionHandler(threading.Thread):
             else:
                 log_action('Received malformed message from', self.address, ', code:', hex(chunk[0]),
                            severity='ERROR')
-        except Exception as e:
-            log_action("Error occurred in TCP Connection handler:", e, severity='ERROR')
         finally:
             self.socket.close()
 
