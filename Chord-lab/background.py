@@ -12,7 +12,8 @@ class NodeInitializer(threading.Thread):
         self.node = node
 
     def run(self):
-        while not self.node.picked_up:
+        while self.node.ip_bytes == self.node.predecessor == self.node.successor2 == self.node.fingers[0]\
+                and not self.node.picked_up:
             try:
                 communication.send_init()
             except Exception as e:
