@@ -129,10 +129,10 @@ def add_entry(address_bytes, key_hash, value_ip_bytes):
         if chunk[0] == protocol.message_codes['OK_RESPONSE']:
             return True
         elif chunk[0] == protocol.message_codes['COLLISION']:
-            log_action("Received `COLLISION' in response to `ADD_ENTRY'", 'INFO')
+            log_action("Received `COLLISION' in response to `ADD_ENTRY'", severity='INFO')
             return False
         elif chunk[0] == protocol.message_codes['ERROR']:
-            log_action("Received `ERROR' in response to `ADD_ENTRY'", 'ERROR')
+            log_action("Received `ERROR' in response to `ADD_ENTRY'", severity='ERROR')
             return False
 
     msg = protocol.message_code('ADD_ENTRY') + util.pack_hash(key_hash) + value_ip_bytes
@@ -204,7 +204,7 @@ def add_to_backup(address_bytes, key_hash, value_ip_bytes):
         if chunk[0] == protocol.message_codes['OK_RESPONSE']:
             return True
         elif chunk[0] == protocol.message_codes['ERROR']:
-            log_action("Received `ERROR' in response to `ADD_TO_BACKUP'", 'ERROR')
+            log_action("Received `ERROR' in response to `ADD_TO_BACKUP'", severity='ERROR')
             return False
 
     msg = protocol.message_code('ADD_TO_BACKUP') + util.pack_hash(key_hash) + value_ip_bytes
@@ -220,7 +220,7 @@ def delete_from_backup(address_bytes, key_hash):
         if chunk[0] == protocol.message_codes['OK_RESPONSE']:
             return True
         elif chunk[0] == protocol.message_codes['ERROR']:
-            log_action("Received `ERROR' in response to `DELETE_FROM_BACKUP'", 'ERROR')
+            log_action("Received `ERROR' in response to `DELETE_FROM_BACKUP'", severity='ERROR')
             return False
 
     msg = protocol.message_code('DELETE_FROM_BACKUP') + util.pack_hash(key_hash)
