@@ -135,6 +135,8 @@ class Node(object):
             return self.ip_bytes
         for ip_bytes in reversed(self.fingers):
             if util.in_range(util.my_hash(ip_bytes), self.ip_hash, util.dec(key_hash)):
+                if ip_bytes == self.ip_bytes:
+                    continue
                 try:
                     x = communication.get_successor(ip_bytes, key_hash, self)
                     return x
