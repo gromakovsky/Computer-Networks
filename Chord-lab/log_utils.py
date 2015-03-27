@@ -10,6 +10,6 @@ def log_action(*args, severity='DEBUG'):
     if severity == 'ERROR':
         print('ERROR:', *args, file=sys.stderr)
     elif severity == 'DEBUG':
-        print(*args, file=debug_file)
+        print(*args, file=debug_file, flush=True)
     else:
         print(*args)
