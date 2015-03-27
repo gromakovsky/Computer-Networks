@@ -94,7 +94,7 @@ class ConnectionHandler(threading.Thread):
 
     def handle_get_ip(self, chunk):
         self.log_message_receiving('GET_IP')
-        key_hash = util.read_msg(self.socket, 4, chunk[1:])
+        key_hash = util.unpack_hash(util.read_msg(self.socket, 4, chunk[1:]))
         res = self.node.addresses.get(key_hash)
         if res is None:
             self.reply_error()
@@ -103,7 +103,7 @@ class ConnectionHandler(threading.Thread):
 
     def handle_get_data(self, chunk):
         self.log_message_receiving('GET_DATA')
-        key_hash = util.read_msg(self.socket, 4, chunk[1:])
+        key_hash = util.unpack_hash(util.read_msg(self.socket, 4, chunk[1:]))
         res = self.node.storage.get(key_hash)
         if res is None:
             self.reply_error()
@@ -138,12 +138,12 @@ class ConnectionHandler(threading.Thread):
 
     def handle_delete_entry(self, chunk):
         self.log_message_receiving('DELETE_ENTRY')
-        key_hash = util.read_msg(self.socket, 4, chunk[1:])
+        key_hash = util.unpack_hash(util.read_msg(self.socket, 4, chunk[1:]))
         self.node.delete_entry(key_hash)
 
     def handle_delete_from_backup(self, chunk):
         self.log_message_receiving('DELETE_FROM_BACKUP')
-        key_hash = util.read_msg(self.socket, 4, chunk[1:])
+        key_hash = util.unpack_hash(util.read_msg(self.socket, 4, chunk[1:]))
         if self.node.delete_entry(key_hash):
             self.reply_ok()
         else:
