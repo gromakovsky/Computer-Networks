@@ -73,7 +73,7 @@ class KeepAliveTracker(threading.Thread):
         self.node = node
 
     def run(self):
-        time.sleep(protocol.max_no_keep_alive)
+        time.sleep(protocol.max_no_keep_alive / 2)
         while True:
             if time.time() - self.node.last_keep_alive > protocol.max_no_keep_alive:
                 try:
@@ -84,3 +84,4 @@ class KeepAliveTracker(threading.Thread):
 
 
 background_thread_classes = [NodeInitializer, AliveKeeper, Stabilizer, FingersFixer, KeepAliveTracker]
+
