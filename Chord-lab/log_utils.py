@@ -24,7 +24,7 @@ def log_action(*args, severity='DEBUG'):
     args_with_time = ['[' + str(datetime.datetime.now()) + ']']
     args_with_time.extend(args)
     if severity == 'ERROR':
-        args_list = [Colors.FAIL + '[ERROR]']
+        args_list = [Colors.FAIL + '[WARNING]']
         args_list.extend(args_with_time)
         args_list.append(Colors.ENDC)
         print(*args_list, file=sys.stderr)
