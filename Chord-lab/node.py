@@ -50,10 +50,19 @@ class Node(object):
         if maybe_res is not None:
             return maybe_res
 
-        node_address = self.find_successor(key_hash)
-        log_action('Node responsible for key {} (hash: {}):'.format(key, key_hash), util.readable_ip(node_address),
-                   severity='INFO')
-        data_address = communication.get_ip(node_address, key_hash)
+        try:
+            node_address = self.find_successor(key_hash)
+            log_action('Node responsible for key {} (hash: {}):'.format(key, key_hash), util.readable_ip(node_address),
+                       severity='INFO')
+        except Exception as e:
+            log_action('Could not get address of node responsible for {}:'.format(key), e, severity='INFO')
+            return None
+        try:
+            data_address = communication.get_ip(node_address, key_hash)
+        except Exception as e:
+            log_action('Could not get address of node with {}:'.format(key), e, severity='ERROR')
+            return None
+
         log_action('Node with key {} (hash: {}):'.format(key, key_hash), util.readable_ip(node_address),
                    severity='INFO')
         for _ in range(protocol.get_attempts_count):
