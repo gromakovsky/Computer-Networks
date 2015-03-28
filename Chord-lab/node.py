@@ -82,17 +82,11 @@ class Node(object):
 
     def stabilize(self):
         x = communication.get_predecessor(self.fingers[0]) if self.fingers[0] != self.ip_bytes else self.predecessor
-
-        def do_update():
+        if util.in_range(util.my_hash(x), util.inc(self.ip_hash), self.fingers_hash[0]):
             self._update_finger(0, x)
-            self._update_successor2(communication.get_successor(x, self.fingers_hash[0], self))
-        if util.distance(self.ip_hash, self.fingers_hash[0]) > 1:
-            if util.in_range(util.my_hash(x), util.inc(self.ip_hash), util.dec(self.fingers_hash[0])):
-                do_update()
-        elif self.ip_hash == self.fingers_hash[0] and x != self.ip_hash:
-                do_update()
-
         communication.send_notify(self.fingers[0])
+        ret = communication.get_successor(self.fingers[0], self.fingers_hash[0], self)
+        self._update_successor2(self.ip_bytes if ret == self.fingers[0] else ret)
 
     def fix_fingers(self):
         idx = random.randint(0, protocol.hash_size_bits - 1)
