@@ -98,7 +98,7 @@ class Node(object):
         log_action('Successor {} failed'.format(util.readable_ip(self.fingers[0])), severity='INFO')
         communication.send_pred_failed(self.successor2)
         self._update_finger(0, self.successor2)
-        self._update_successor2(communication.get_successor(self.fingers[0], self.fingers_hash[0]), self)
+        self._update_successor2(communication.get_successor(self.fingers[0], self.fingers_hash[0], self))
 
     # Chord implementation
     def process_init(self, ip_bytes):
