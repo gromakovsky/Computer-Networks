@@ -66,6 +66,7 @@ class ConnectionHandler(threading.Thread):
         self.log_message_receiving('FIND_SUCCESSOR')
         key_hash = util.unpack_hash(util.read_msg(self.socket, 4, chunk[1:]))
         res = self.node.find_successor(key_hash)
+        log_action('Successor of {} is {}'.format(key_hash, util.readable_ip(res)))
         msg = protocol.message_code('OK_RESPONSE') + res if res else protocol.message_code('ERROR')
         self.send_all(msg)
 

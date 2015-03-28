@@ -151,6 +151,7 @@ class Node(object):
                     continue
                 try:
                     x = communication.get_successor(ip_bytes, key_hash, self)
+                    log_action('{} said that succesor of {} is {}'.format(util.readable_ip(ip_bytes), key_hash, util.readable_ip(x)))
                     return x
                 except Exception as e:
                     log_action('Failed to get successor from', util.readable_ip(ip_bytes), '\nReason:', e,
