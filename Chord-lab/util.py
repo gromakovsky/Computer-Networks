@@ -17,7 +17,7 @@ def readable_ip(ip_bytes):
 def my_hash(s):
     hasher = hashlib.sha1()
     hasher.update(s)
-    hash_bytes = hasher.digest()[:int(protocol.hash_size_bits / 8)]
+    hash_bytes = hasher.digest()[-int(protocol.hash_size_bits / 8):]
     return struct.unpack('>I', hash_bytes)[0]
 
 
